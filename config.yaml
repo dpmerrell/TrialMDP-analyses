@@ -1,0 +1,21 @@
+
+
+# The directory where all analysis
+# outputs will be stored
+result_dir: "temp"
+
+simulation_params:
+    n_samples: 10000
+    n_patients: [64] # 128, 256]
+    #true_p_range: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    true_p_range: [0.25, 0.5, 0.75]
+    
+
+blockraropt_params:
+    block_increment_frac: [0.125, 0.25]
+    prior_strength: [0.5, 1.0]
+    failure_cost: [0.5, 1.0, 2.0]
+    block_cost: [0.5, 1.0, 2.0]
+    transition_rwd: ["block_cost"]
+    terminal_rwd: ["wald_failure"]
+
