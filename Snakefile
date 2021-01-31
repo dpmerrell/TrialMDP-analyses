@@ -8,7 +8,7 @@ SCRIPT_DIR = "scripts"
 
 RESULT_DIR = config["result_dir"]
 POLICY_DB_DIR = path.join(RESULT_DIR, "precomputed_policies")
-SIM_OUTPUT_DIR = path.join(RESULT_DIR, "summaries")
+SIM_OUTPUT_DIR = path.join(RESULT_DIR, "sim_output")
 FIG_DIR = path.join(RESULT_DIR, "figures")
 SCORE_DIR = path.join(RESULT_DIR, "scores") 
 TABLE_DIR = path.join(RESULT_DIR, "tabulated")
@@ -28,8 +28,28 @@ PRIOR_STRENGTH = BLOCKRAROPT_PARAMS["prior_strength"]
 
 rule all:
     input:
-        path.join(TABLE_DIR, "blockraropt.tsv"),
-        path.join(TABLE_DIR, "traditional.tsv"),
+        #path.join(TABLE_DIR, "blockraropt.tsv"),
+	#path.join(TABLE_DIR, "traditional.tsv"),
+        expand(path.join(FIG_DIR,"heatmaps","score={score}__design=traditional_pat={pat}.png"),
+               score=["prob_reject", "excess_failure_frac"],
+               pat=N_PATIENTS),
+        expand(path.join(FIG_DIR,"heatmaps", "score={score}__design=blockraropt_pat={pat}_fc={fc}_bc={bc}_pr={pr}.png"),
+               score=["prob_reject", "excess_failure_frac"],
+               pat=N_PATIENTS, fc=FAILURE_COST, bc=BLOCK_COST, pr=PRIOR_STRENGTH)
+               
+
+def get_kv_pairs(wc):
+    return " ".join(wc["other_params"].strip("_").split("_"))
+
+rule plot_probspace_heatmap:
+    input:
+        path.join(TABLE_DIR, "{design}.tsv")
+    output:
+        path.join(FIG_DIR,"heatmaps","score={score}__design={design,[a-z]+}_{other_params}.png")
+    params:
+        kvp=get_kv_pairs
+    shell:
+        "python scripts/plot_heatmap.py {input} {wildcards.score} {output} --kv_pairs design={wildcards.design} {params.kvp}"
 
 
 rule tabulate_blockraropt_scores:

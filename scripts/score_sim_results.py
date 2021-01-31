@@ -3,24 +3,10 @@ import argparse
 import json
 
 
-def type_1_error(sim_results, true_p_a, true_p_b):
+def prob_reject(sim_results):
 
-    if None in (true_p_a, true_p_b):
-        return None
-    elif true_p_a != true_p_b:
-        return None
-    elif true_p_a == true_p_b:
-        return sim_results["n_rejected"] / sim_results["trial_count"]
+    return sim_results["n_rejected"] / sim_results["trial_count"]
 
-
-def statistical_power(sim_results, true_p_a, true_p_b):
-
-    if None in (true_p_a, true_p_b):
-        return None
-    elif true_p_a != true_p_b:
-        return sim_results["n_rejected"] / sim_results["trial_count"]
-    elif true_p_a == true_p_b:
-        return None
 
 def excess_failure_frac(sim_results, true_p_a, true_p_b):
     
@@ -50,17 +36,12 @@ def compute_scores(sim_results, args):
     failure_cost = args.failure_cost
     block_cost = args.block_cost
 
-    sim_results["type_1_error"] = type_1_error(sim_results,
-                                               true_p_a,
-                                               true_p_b)
-
-    sim_results["power"] = statistical_power(sim_results,
-                                             true_p_a,
-                                             true_p_b) 
+    sim_results["prob_reject"] = prob_reject(sim_results)
 
     sim_results["excess_failure_frac"] = excess_failure_frac(sim_results,
                                                          true_p_a,
                                                          true_p_b)
+
     return sim_results
 
 
