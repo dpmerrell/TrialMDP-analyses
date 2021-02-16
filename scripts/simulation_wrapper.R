@@ -149,24 +149,12 @@ if(opt$design == "traditional"){
     stop( c("design=", opt$design," is not a valid option.") )
 }
 
-##############################
-# Build the summary_update function
-#if(opt$analysis == "wald"){
-#    summary_update <- function(s, h) { return(wald_test_summary_update(s,h,opt$alpha)) }
-#} else if (opt$analysis == "cmh"){
-#    summary_update <- function(s, h) { return(cmh_test_summary_update(s,h,opt$alpha)) }
-#} else if (opt$analysis == "full_history"){
-summary_update <- full_history_summary_update 
-#} else{
-#    stop( c("analysis=", opt$test," is not a valid option.") )
-#}
-
 
 ##############################
 # Perform the simulations!
 results <- simulate_N_trials(N_simulations, N_patients, 
                              true_p_A, true_p_B, 
-                             policy, summary_update)
+                             policy, full_history_summary_update)
 
 
 
