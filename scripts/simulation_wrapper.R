@@ -10,9 +10,6 @@ library("blockRARopt")
 library("optparse")
 library("jsonlite")
 
-#source(here::here("simulation_util.R"))
-#source(here::here("policies.R"))
-#source(here::here("summary_updates.R"))
 
 
 ##############################################
@@ -97,52 +94,16 @@ blockraropt_policy <- function(cur_state, conn){
 # DEFINE SUMMARY UPDATES 
 ##############################################
 
-# After completing a trial, compute some summary information.
-# Does a Wald test reject the null hypothesis p_A == p_B?
-wald_test_summary_update <- function(summary, history, alpha){
 
-    # Initialize an empty summary
+full_history_summary_update <- function(summary,history){
+
     if(length(summary) == 0){
-        summary[["trial_count"]] <- 0
-        summary[["n_rejected"]] <- 0
-        summary[["N_A"]] <- 0
-        summary[["N_B"]] <- 0
-        summary[["blocks"]] <- 0
-    } 
-
-    # perform Wald test
-    ct <- history[[length(history)]]
-    p_A <- ct[1,1] / sum(ct[1,1:2])
-    p_B <- ct[2,1] / sum(ct[2,1:2])
-    p <- sum(ct[1:2,1])/sum(ct)
-    N_vec <- rowSums(ct)
-    if (0 < p & p < 1){
-        W <- (p_A - p_B)^2 / (p*(1-p)) * prod(N_vec) / sum(N_vec)
-    } else{
-        W <- 0
+        summary[["histories"]] <- list()
+        summary[["n_histories"]] <- 0 
     }
-    # Update summary
-   
-    tryCatch(
-      { 
-        if( W >= qchisq(1.0-alpha, 1) ){
-            summary[["n_rejected"]] <- summary[["n_rejected"]] + 1
-        }
-      },
-      error = function(condition){
-        print("VALUE OF history IS ")
-        print(history)
-        print("VALUE OF ct IS ", ct)
-        print("VALUE OF p IS ", p)
-        print("VALUE OF N_vec IS ", N_vec)
-        print("VALUE OF W IS ", W)
-        stop()
-      }
-    )
-    summary[["N_A"]] <- summary[["N_A"]] + N_vec[1]
-    summary[["N_B"]] <- summary[["N_B"]] + N_vec[2]
-    summary[["blocks"]] <- summary[["blocks"]] + length(history)-1 
-    summary[["trial_count"]] <- summary[["trial_count"]] + 1
+
+    summary[["n_histories"]] <- summary[["n_histories"]] + 1
+    summary[["histories"]][[summary[["n_histories"]]]] <- history
 
     return(summary)
 }
@@ -156,7 +117,7 @@ wald_test_summary_update <- function(summary, history, alpha){
 # Build argument parser
 option_list <- list(
     make_option("--design", type="character", default="traditional"),
-    make_option("--test", type="character", default="wald"),
+#    make_option("--analysis", type="character", default="wald"),
     make_option("--blockraropt_db", type="character", default=""),
     make_option("--alpha", default=0.05)
 )
@@ -188,14 +149,17 @@ if(opt$design == "traditional"){
     stop( c("design=", opt$design," is not a valid option.") )
 }
 
-
 ##############################
 # Build the summary_update function
-if(opt$test == "wald"){
-    summary_update <- function(s, h) { return(wald_test_summary_update(s,h,opt$alpha)) }
-} else{
-    stop( c("test=", opt$test," is not a valid option.") )
-}
+#if(opt$analysis == "wald"){
+#    summary_update <- function(s, h) { return(wald_test_summary_update(s,h,opt$alpha)) }
+#} else if (opt$analysis == "cmh"){
+#    summary_update <- function(s, h) { return(cmh_test_summary_update(s,h,opt$alpha)) }
+#} else if (opt$analysis == "full_history"){
+summary_update <- full_history_summary_update 
+#} else{
+#    stop( c("analysis=", opt$test," is not a valid option.") )
+#}
 
 
 ##############################

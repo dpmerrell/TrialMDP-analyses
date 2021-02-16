@@ -13,6 +13,9 @@ NICE_NAMES = {"prob_reject": "Rejection Probability",
               "design": "Trial Design",
               "blockraropt": "BlockRAROpt",
               "traditional": "One-to-One",
-              "excess_failure_frac": "Excess Failure Fraction"
+              "excess_failure_frac": "Excess Failure Fraction",
+              "analysis": "Analysis",
+              "wald": "Wald Test",
+              "cmh": "C-M-H Test"
              }
 
