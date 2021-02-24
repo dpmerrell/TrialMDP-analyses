@@ -1,4 +1,4 @@
-# analyze_histories.R
+# summarize_histories.R
 # (c) 2021-02 David Merrell
 # 
 # A script for analyzing trial histories
@@ -33,8 +33,8 @@ compute_wald_p_value <- function(history){
 compute_cmh_p_value <- function(history){
 
     # compute Cochran-Mantel-Haenszel test statistic
-    numerator_sq = 0.0
-    denom = 0.0
+    numerator_sq <- 0.0
+    denom <- 0.0
     for(i in 2:length(history)){
         ct <- history[[i]] - history[[i-1]]
         total <- sum(ct)
@@ -42,10 +42,11 @@ compute_cmh_p_value <- function(history){
         colsum_1 <- ct[1,1] + ct[2,1]
         numerator_sq <- numerator_sq + ( ct[1,1] - (rowsum_1*colsum_1)/total )
         denom <- denom + (rowsum_1*(total-rowsum_1)*colsum_1*(total-colsum_1)/(total*total*(total-1)))
-    } 
-    if (denom != 0.0){
+    }
+ 
+    if(!(is.na(denom)) & denom != 0.0){
         cmh <- numerator_sq*numerator_sq / denom
-    } else{
+    }else{
         cmh <- 0.0
     }
   
@@ -66,9 +67,8 @@ analyze_histories <- function (histories){
         # Get the number of blocks, N_A, N_B
         n_stages <- length(histories[[i]])
         summary[["blocks"]] <- (n_stages - 1) 
-        rs <- rowSums(histories[[i]][[ n_stages ]])
-        summary[["N_A"]] <- rs[1] 
-        summary[["N_B"]] <- rs[2] 
+
+        summary[["first_blocksize"]] <- sum(histories[[i]][[2]])
 
         # Store the entries of the final contingency table 
         summary[["final_A0"]] <- histories[[i]][[n_stages]][1,2]
@@ -125,8 +125,6 @@ to_matrices <- function(histories){
 # PARSE COMMAND LINE ARGUMENTS
 #################################
 
-#option_list <- list( make_option(),
-#                   ) 
 
 parser <- OptionParser(usage="analyze_histories.R HISTORIES_JSON OUTPUT_JSON")#, option_list=option_list)
 arguments <- parse_args(parser, positional_arguments=2)

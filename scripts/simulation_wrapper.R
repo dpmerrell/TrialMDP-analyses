@@ -90,6 +90,47 @@ blockraropt_policy <- function(cur_state, conn){
 }
 
 
+blockrar_policy <- function(cur_state, blocksize_map){
+
+    N_A <- cur_state[1,1]+cur_state[1,2]
+    N_B <- cur_state[2,1]+cur_state[2,2]
+
+    rar_alloc <- 0.5
+    if (N_A != 0 & N_B != 0){
+        p_A <- cur_state[1,1] / N_A 
+        p_B <- cur_state[2,1] / N_B
+        if (0 < p_A & 0 < p_B){ 
+            sq_p_A <- sqrt(p_A)
+            rar_alloc <- sq_p_A / (sq_p_A + sqrt(p_B))
+        }
+    }
+
+    blocksize <- blocksize_map[[toString(N_A + N_B)]]
+
+    a_A <- rbinom(1, blocksize, rar_alloc)
+
+    return( c(a_A, blocksize - a_A) )
+}
+
+
+# (Helper function for building the blocksize map)
+build_blocksize_map <- function(n_patients, n_blocks){
+    blocksize_map <- list()
+    pat <- 0
+    block_idx <- 1
+    rate <- n_patients/n_blocks
+
+    while (pat < n_patients){
+        blocksize <- round(block_idx*rate) - round((block_idx-1)*rate)
+        blocksize_map[[toString(pat)]] <- blocksize
+        
+        pat <- pat + blocksize
+        block_idx <- block_idx + 1
+    }
+
+    return(blocksize_map)
+}
+
 ##############################################
 # DEFINE SUMMARY UPDATES 
 ##############################################
@@ -117,12 +158,13 @@ full_history_summary_update <- function(summary,history){
 # Build argument parser
 option_list <- list(
     make_option("--design", type="character", default="traditional"),
-#    make_option("--analysis", type="character", default="wald"),
     make_option("--blockraropt_db", type="character", default=""),
-    make_option("--alpha", default=0.05)
+    make_option("--n_blocks", type="integer", default=1),
+    make_option("--target_t1", default=0.05),
+    make_option("--target_power", default=0.8)
 )
 
-parser <- OptionParser(usage="simulation_wrapper.R N_PATIENTS N_SIMULATIONS TRUE_P_A TRUE_P_B OUTPUT_JSON [options]", option_list=option_list)
+parser <- OptionParser(usage="simulation_wrapper.R N_SIMULATIONS TRUE_P_A TRUE_P_B OUTPUT_JSON [options]", option_list=option_list)
 
 
 ##############################
@@ -142,6 +184,12 @@ output_json <- pargs[5]
 # Build the trial design
 if(opt$design == "traditional"){
     policy <- function(ct){ return(traditional_policy(ct, N_patients)) }
+} else if (opt$design == "rar") {
+    blocksize_map <- build_blocksize_map(N_patients, N_patients)
+    policy <- function(ct){ return(blockrar_policy(ct, blocksize_map)) }
+} else if (opt$design == "blockrar") {
+    blocksize_map <- build_blocksize_map(N_patients, opt$n_blocks)
+    policy <- function(ct){ return(blockrar_policy(ct, blocksize_map)) }
 } else if (opt$design == "blockraropt"){
     conn <- blockRARopt::connect_to_results(opt$blockraropt_db)
     policy <- function(ct){ return(blockraropt_policy(ct, conn)) }
