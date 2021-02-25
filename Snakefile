@@ -11,6 +11,7 @@ POLICY_DB_DIR = path.join(RESULT_DIR, "precomputed_policies")
 HISTORY_DIR = path.join(RESULT_DIR, "histories")
 SUMMARY_DIR = path.join(RESULT_DIR, "summaries") 
 SCORE_DIR = path.join(RESULT_DIR, "scores")
+COMPARISON_DIR = path.join(RESULT_DIR, "comparisons")
 FIG_DIR = path.join(RESULT_DIR, "figures")
 
 SIM_PARAMS = config["simulation_params"]
@@ -37,6 +38,8 @@ def get_n_patients(wc):
 # /NUMBER OF PATIENTS
 ###############################
 
+BASELINES = config["baseline_designs"]
+
 BLOCKRAROPT_PARAMS = config["blockraropt_params"]
 BLOCK_INCR = BLOCKRAROPT_PARAMS["block_increment_frac"]
 FAILURE_COST = BLOCKRAROPT_PARAMS["failure_cost"]
@@ -57,11 +60,9 @@ rule all:
                pr=PRIOR_STRENGTH,
                stat=OPT_STAT
                ),
-        expand(path.join(SCORE_DIR, "design=blockrar", "fc={fc}_bc={bc}_nblocks={nblocks}.tsv"),
+        expand(path.join(SCORE_DIR, "design=blockrar", "fc={fc}_bc={bc}.tsv"),
                fc=FAILURE_COST,
-               bc=BLOCK_COST,
-               nblocks=BLOCKRAR_N_BLOCKS
-               ),
+               bc=BLOCK_COST),
         expand(path.join(SCORE_DIR, "design=rar", "fc={fc}_bc={bc}.tsv"),
                fc=FAILURE_COST,
                bc=BLOCK_COST,
@@ -79,9 +80,26 @@ rule all:
                stat=OPT_STAT),
         expand(path.join(FIG_DIR, "histories", "design=rar", "{probs}.png"),
                probs=TRUE_P_PAIRS),
-	expand(path.join(FIG_DIR, "histories", "design=blockrar", "{probs}_nblocks={nblocks}.png"),
-               probs=TRUE_P_PAIRS,
-               nblocks=BLOCKRAR_N_BLOCKS)
+	expand(path.join(FIG_DIR, "histories", "design=blockrar", "{probs}.png"),
+               probs=TRUE_P_PAIRS),
+        expand(path.join(COMPARISON_DIR, "fc={fc}_bc={bc}_inc={inc}_pr={pr}_stat={stat}.xlsx"),
+               fc=FAILURE_COST,
+               bc=BLOCK_COST,
+               inc=BLOCK_INCR,
+               pr=PRIOR_STRENGTH,
+               stat=OPT_STAT)
+
+
+rule compare_designs:
+    input:
+        src=path.join(SCRIPT_DIR, "tabulate_comparisons.py"),
+        blockraropt_tsv=path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_{bro_params}.tsv"),
+        other_tsvs=expand(path.join(SCORE_DIR, "design={des}", "fc={{fc}}_bc={{bc}}.tsv"),
+                          des=BASELINES)
+    output:
+        path.join(COMPARISON_DIR, "fc={fc,[.0-9]+}_bc={bc,[.0-9]+}_{bro_params}.xlsx")
+    shell:
+        "python {input.src} --score_tsvs {input.other_tsvs} {input.blockraropt_tsv} --identifiers {BASELINES} blockraropt --output_tsv {output}" 
 
 
 def get_kv_pairs(wc):
@@ -109,15 +127,15 @@ rule score_and_aggregate_blockraropt:
         "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
 
 
-rule score_and_aggregate_blockrar:
-    input:
-        src=path.join(SCRIPT_DIR, "score_and_aggregate.py"),
-        summ=expand(path.join(SUMMARY_DIR, "design=blockrar", "{probs}_nblocks={{nblocks}}.json"), 
-                    probs=TRUE_P_PAIRS)
-    output:
-        path.join(SCORE_DIR, "design=blockrar", "fc={fc}_bc={bc}_nblocks={nblocks}.tsv")
-    shell:
-        "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
+#rule score_and_aggregate_blockrar:
+#    input:
+#        src=path.join(SCRIPT_DIR, "score_and_aggregate.py"),
+#        summ=expand(path.join(SUMMARY_DIR, "design=blockrar", "{probs}_nblocks={{nblocks}}.json"), 
+#                    probs=TRUE_P_PAIRS)
+#    output:
+#        path.join(SCORE_DIR, "design=blockrar", "fc={fc}_bc={bc}_nblocks={nblocks}.tsv")
+#    shell:
+#        "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
 
 
 rule score_and_aggregate_default:
@@ -177,11 +195,11 @@ rule simulate_blockrar_design:
     input:
         rscript=path.join(SCRIPT_DIR, "simulation_wrapper.R"),
     output:
-        path.join(HISTORY_DIR, "design=blockrar", "pA={pA}_pB={pB}_nblocks={nblocks}.json")
+        path.join(HISTORY_DIR, "design=blockrar", "pA={pA}_pB={pB}.json")
     params:
         n_pat=get_n_patients
     shell:
-        "Rscript {input.rscript} {params.n_pat} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design blockrar --n_blocks {wildcards.nblocks}"
+        "Rscript {input.rscript} {params.n_pat} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design blockrar --n_blocks {BLOCKRAR_N_BLOCKS}"
 
 
 def get_policy_db(wc):
@@ -197,6 +215,7 @@ rule simulate_blockraropt_design:
         n_pat=get_n_patients
     shell:
         "Rscript {input.rscript} {params.n_pat} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design blockraropt --blockraropt_db {input.db}"
+
 
 def compute_block_incr(wc):
     return int(float(wc["inc"])*int(wc["pat"]))

@@ -22,11 +22,14 @@ def compute_scores(summary_df, fc, bc):
     N_B = summary_df["final_B0"] + summary_df["final_B1"]
     summary_df["pA_mle"] = summary_df["final_A1"] / N_A 
     summary_df["pB_mle"] = summary_df["final_B1"] / N_B 
+    summary_df["pA_mle_bias"] = summary_df["pA_mle"] - summary_df["pA"]
+    summary_df["pB_mle_bias"] = summary_df["pB_mle"] - summary_df["pB"]
 
     # Total number of patients
     summary_df["pat"] = N_A + N_B    
 
     # Excess failures (recall: by construction, pA >= pB)
+    summary_df["A_fraction"] = N_A / summary_df["pat"]
     summary_df["excess_failures"] = (summary_df["pA"] - summary_df["pB"])*N_B
 
     # Total utility

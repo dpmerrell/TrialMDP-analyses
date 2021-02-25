@@ -1,5 +1,4 @@
 
-
 # The directory where all analysis
 # outputs will be stored
 result_dir: "temp"
@@ -18,6 +17,7 @@ blockraropt_params:
     #stat: ["wald", "cmh"]
     stat: ["cmh"]
 
+baseline_designs: ["traditional", "rar", "blockrar"]
 
 blockrar_params:
-    n_blocks: [2,4]
+    n_blocks: 4
