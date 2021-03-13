@@ -1,6 +1,8 @@
 
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
+import script_util as su
+import numpy as np
 import matplotlib
 import json
 import sys
@@ -43,7 +45,7 @@ def plot_history(history):
     return a_alloc[-1] 
 
 
-def plot_histories(histories):
+def plot_histories(histories, design):
 
     fig = plt.figure(figsize=(5,3))
     gs = gridspec.GridSpec(nrows=1, ncols=2, 
@@ -51,7 +53,12 @@ def plot_histories(histories):
                            width_ratios=[10,1])
     fig.subplots_adjust(wspace=0.1, hspace=0.0)
 
-    plt.suptitle("Simulated Histories")
+    N = get_n_patients(histories[0])[-1]
+
+    suptitle = "Simulated Histories"
+    suptitle += "\n{}; {}={}".format(su.NICE_NAMES[design],
+                                     su.NICE_NAMES["pat"], N)
+    plt.suptitle(suptitle)
     
     ax1 = fig.add_subplot(gs[0,0])
     plt.xlabel("Trial Progress (fraction of patients)")
@@ -73,9 +80,11 @@ def plot_histories(histories):
 
     ax2 = fig.add_subplot(gs[0,1])
     plt.hist(final_allocs, bins=25, range=[0,1], orientation="horizontal", color="gray")
+    mu = np.mean(final_allocs)
     plt.ylim(0,1)
     plt.xticks([],[])
-    plt.yticks([],[])
+    ax2.yaxis.tick_right()
+    plt.yticks([mu],["{:.2f}".format(mu)])
 
     return
 
@@ -83,13 +92,14 @@ def plot_histories(histories):
 if __name__=="__main__":
 
     in_json = sys.argv[1]
-    out_png = sys.argv[2]
+    design = sys.argv[2]
+    out_png = sys.argv[3]
 
     with open(in_json, "r") as f:
         d = json.load(f)
         histories = d["histories"]
 
-    plot_histories(histories)
+    plot_histories(histories, design)
 
     plt.tight_layout()
 

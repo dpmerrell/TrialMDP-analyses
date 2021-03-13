@@ -1,6 +1,7 @@
 
 
 from os import path
+from scipy.stats import norm
 
 configfile: "config.yaml"
 
@@ -19,11 +20,27 @@ N_SAMPLES = SIM_PARAMS["n_samples"]
 TRUE_P_RANGE = SIM_PARAMS["true_p_range"]
 TRUE_P_PAIRS = ["pA={}_pB={}".format(pa, pb) for i, pa in enumerate(TRUE_P_RANGE) for pb in TRUE_P_RANGE[:(i+1)] ]
 
+
 ###############################
 # COMPUTE NUMBER OF PATIENTS
-# A stand-in until Thevaa provides some code
-def compute_n_patients(pA, pB, target_power=0.8, target_t1=0.05):
-    return 128
+def compute_n_patients(pA, pB, alpha=0.05, beta=0.2):
+    var_a = pA*(1.0-pA)
+    var_b = pB*(1.0-pB)
+    delta = abs(pA - pB)
+
+    # A kluge for now
+    if delta == 0.0:
+        delta = 0.25
+
+    k = (var_b / var_a)**0.5
+
+    n_a = (norm.ppf(1.0-alpha) + norm.ppf(1.0-beta))**2.0 * (var_a + var_b/k) / (delta**2.0)
+    n_b = k * n_a
+
+    n = int(n_a + n_b)
+    print("pA: ", pA, "\tpB: ", pB, "\tN: ", n)
+    return n
+
 
 N_PATIENTS_DICT = {}
 for pair in TRUE_P_PAIRS:
@@ -34,6 +51,7 @@ for pair in TRUE_P_PAIRS:
 
 def get_n_patients(wc):
     return N_PATIENTS_DICT["{}_{}".format(wc["pA"], wc["pB"])]
+
 
 # /NUMBER OF PATIENTS
 ###############################
@@ -87,6 +105,12 @@ rule all:
                bc=BLOCK_COST,
                inc=BLOCK_INCR,
                pr=PRIOR_STRENGTH,
+               stat=OPT_STAT),
+        expand(path.join(FIG_DIR, "fc_bc", "design=blockraropt", "score={score}_{probs}_inc={inc}_pr={pr}_stat={stat}.png"),
+               score=["excess_failures", "blocks", "cmh_2s"],
+               probs=TRUE_P_PAIRS,
+               inc=BLOCK_INCR,
+               pr=PRIOR_STRENGTH,
                stat=OPT_STAT)
 
 
@@ -106,6 +130,18 @@ def get_kv_pairs(wc):
     return " ".join(wc["other_params"].strip("_").split("_"))
 
 
+rule plot_fc_bc:
+    input:
+        src=path.join(SCRIPT_DIR, "plot_fc_bc.py"),
+        tsvs=expand(path.join(SCORE_DIR, "design={{design}}","fc={fc}_bc={bc}_{{other_params}}.tsv"),
+	            fc=FAILURE_COST,
+		    bc=BLOCK_COST)
+    output:
+        path.join(FIG_DIR, "fc_bc", "design={design}", "score={score}_pA={pA}_pB={pB,[.0-9]+}_{other_params}.png")
+    shell:
+        "python {input.src} {wildcards.design} {wildcards.pA} {wildcards.pB} {wildcards.score} {output} --score_tsvs {input.tsvs}"
+
+
 rule plot_histories:
     input:
         js=path.join(HISTORY_DIR, "design={design}", "{other_params}.json"),
@@ -113,7 +149,7 @@ rule plot_histories:
     output:
         path.join(FIG_DIR, "histories", "design={design}", "{other_params}.png")
     shell:
-        "python {input.src} {input.js} {output}"
+        "python {input.src} {input.js} {wildcards.design} {output}"
 
 
 rule score_and_aggregate_blockraropt:

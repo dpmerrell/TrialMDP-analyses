@@ -14,8 +14,11 @@ def compute_scores(summary_df, fc, bc):
     #        be located in the 
     #        "summarize_histories.R" script.)
     alpha = 0.05
-    summary_df["wald_reject"] = (summary_df["wald_p"] < alpha).astype(int)
-    summary_df["cmh_reject"] = (summary_df["cmh_p"] < alpha).astype(int)
+    summary_df["wald_reject"] = (summary_df["wald_p"].astype(float) < alpha).astype(int)
+    summary_df["cmh_reject"] = (summary_df["cmh_p"].astype(float) < alpha).astype(int)
+
+    summary_df["wald_2s"] = summary_df["wald"].astype(float).map(lambda x: x**2)
+    summary_df["cmh_2s"] = summary_df["cmh"].astype(float).map(lambda x: x**2)
 
     # MLE estimates
     N_A = summary_df["final_A0"] + summary_df["final_A1"]
@@ -33,10 +36,10 @@ def compute_scores(summary_df, fc, bc):
     summary_df["excess_failures"] = (summary_df["pA"] - summary_df["pB"])*N_B
 
     # Total utility
-    summary_df["utility_wald"] = summary_df["wald"] \
+    summary_df["utility_wald"] = summary_df["wald_2s"] \
                                  - summary_df["excess_failures"]*fc \
                                  - summary_df["blocks"]*bc
-    summary_df["utility_cmh"] = summary_df["cmh"] \
+    summary_df["utility_cmh"] = summary_df["cmh_2s"] \
                                 - summary_df["excess_failures"]*fc \
                                 - summary_df["blocks"]*bc
 

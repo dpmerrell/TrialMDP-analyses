@@ -96,7 +96,8 @@ blockrar_policy <- function(cur_state, blocksize_map){
     N_B <- cur_state[2,1]+cur_state[2,2]
 
     rar_alloc <- 0.5
-    if (N_A != 0 & N_B != 0){
+    # start RAR policy *after* treating 25% of patients 
+    if (N_A != 0 & N_B != 0 & (N_A + N_B) >= 0.25*blocksize_map[["N_patients"]]){
         p_A <- cur_state[1,1] / N_A 
         p_B <- cur_state[2,1] / N_B
         if (0 < p_A & 0 < p_B){ 
@@ -127,6 +128,8 @@ build_blocksize_map <- function(n_patients, n_blocks){
         pat <- pat + blocksize
         block_idx <- block_idx + 1
     }
+
+    blocksize_map["N_patients"] <- n_patients
 
     return(blocksize_map)
 }

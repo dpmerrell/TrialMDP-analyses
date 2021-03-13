@@ -5,8 +5,8 @@ result_dir: "temp"
 
 simulation_params:
     n_samples: 10000
-    true_p_range: [0.25, 0.375, 0.5, 0.625, 0.75]
-    #true_p_range: [0.25, 0.5, 0.75]
+    #true_p_range: [0.25, 0.375, 0.5, 0.625, 0.75]
+    true_p_range: [0.25, 0.5, 0.75]
     
 
 blockraropt_params:
