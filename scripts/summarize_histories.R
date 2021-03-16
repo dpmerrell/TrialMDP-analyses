@@ -40,21 +40,26 @@ compute_wald_p_value <- function(history){
 }
 
 
-# TODO: use block_size to correctly compute CMH.
-#       block_size = -1 for blocked RAR and blockRARopt designs,
+# TODO: use stratum_size to correctly compute CMH.
+#       stratum_size = -1 for blocked RAR and blockRARopt designs,
 #       and some positive integer for RAR designs.
-compute_cmh_p_value <- function(history, block_size){
+compute_cmh_p_value <- function(history, stratum_size){
 
     # compute Cochran-Mantel-Haenszel test statistic
     numerator_sq <- 0.0
     denom <- 0.0
+    stratum_start <- 1
     for(i in 2:length(history)){
-        ct <- history[[i]] - history[[i-1]]
+        ct <- history[[i]] - history[[stratum_start]]
         total <- sum(ct)
-        rowsum_1 <- ct[1,1] + ct[1,2]
-        colsum_1 <- ct[1,1] + ct[2,1]
-        numerator_sq <- numerator_sq + ( ct[1,1] - (rowsum_1*colsum_1)/total )
-        denom <- denom + (rowsum_1*(total-rowsum_1)*colsum_1*(total-colsum_1)/(total*total*(total-1)))
+        if((total >= stratum_size) | (i==length(history))){
+            rowsum_1 <- ct[1,1] + ct[1,2]
+            colsum_1 <- ct[1,1] + ct[2,1]
+            numerator_sq <- numerator_sq + ( ct[1,1] - (rowsum_1*colsum_1)/total )
+            denom <- denom + (rowsum_1*(total-rowsum_1)*colsum_1*(total-colsum_1)/(total*total*(total-1)))
+            
+            stratum_start <- i
+        }
     }
  
     if(!(is.na(denom)) & denom != 0.0){
@@ -63,10 +68,6 @@ compute_cmh_p_value <- function(history, block_size){
         # (one sided)
         cmh <- numerator_sq / sqrt(denom)
     }else{
-        # (two sided)
-        #cmh <- 0.0
-        # (one sided)
-        #cmh <- -Inf 
         cmh <- 0.0 
     }
   
@@ -79,37 +80,41 @@ compute_cmh_p_value <- function(history, block_size){
     return(list("cmh" = cmh, "p_value" = p_value))
 }
 
-interim_analysis <- function(blocks, cur_idx, block_size){
+interim_analysis <- function(blocks, cur_idx, stratum_size, alpha=0.05){
     
-    cmh_results <- compute_cmh_p_value(blocks[1:cur_idx], block_size)
+    cmh_results <- compute_cmh_p_value(blocks[1:cur_idx], stratum_size)
 
     cur_N <- sum(blocks[[cur_idx]])
     final_N <- sum(blocks[[length(blocks)]])
 
-    # TODO: insert code for computing critical value
-    critical_value <- 0.05 
+    # For interim analysis, we use alpha-spending
+    # with alphas given by O'Brien-Fleming 
+    t_frac <- cur_N / final_N
+    obf_alpha <- 2.0 - 2.0*pnorm(qnorm(1.0 - (0.5*alpha))/sqrt(t_frac))
 
-    stopped_early <- (cmh[["p_value"]] <= critical_value)
+    stopped_early <- (cmh_results[["p_value"]] <= obf_alpha)
  
     return(stopped_early)
 }
 
 
-simulate_early_stopping <- function(history, block_size){
+simulate_early_stopping <- function(history, stratum_size){
 
     interim_info <- list()
     prev_interim <- 0
     n_analyses <- 0
-    for(i in 2:length(blocks)){
+    last_idx <- 1
+    for(i in 2:length(history)){
 
-        cur_N <- sum(blocks[[i]])
+        cur_N <- sum(history[[i]])
         interim_size <- cur_N - prev_interim
 
-        if(interim_size >= block_size){
-            stopped_early <- interim_analysis(blocks, i, block_size)
+        if(interim_size >= stratum_size | i == length(history)){
+            stopped_early <- interim_analysis(history, i, stratum_size)
             n_analyses <- n_analyses + 1
             prev_interim <- cur_N
             if(stopped_early){
+                last_idx <- i
                 break
             }
         }
@@ -117,17 +122,17 @@ simulate_early_stopping <- function(history, block_size){
 
     interim_info[["n_analyses"]] <- n_analyses
     interim_info[["n_patients"]] <- prev_interim
-    final_table <- blocks[[i]]
+    final_table <- history[[last_idx]]
     interim_info[["final_A0"]] <- final_table[1,2] 
     interim_info[["final_A1"]] <- final_table[1,1] 
     interim_info[["final_B0"]] <- final_table[2,2] 
     interim_info[["final_B1"]] <- final_table[2,1]
 
-    return interim_info
+    return(interim_info)
 }
 
 
-analyze_histories <- function (histories, block_size){
+analyze_histories <- function (histories, stratum_size){
 
     summaries <- list()
 
@@ -152,11 +157,11 @@ analyze_histories <- function (histories, block_size){
         summary[["wald_p"]] <- wald[["p_value"]]
  
         # Compute Cochran-Mantel-Haenszel statistic and p-value
-        cmh <- compute_cmh_p_value(histories[[i]], block_size)
+        cmh <- compute_cmh_p_value(histories[[i]], stratum_size)
         summary[["cmh"]] <- cmh[["cmh"]]
         summary[["cmh_p"]] <- cmh[["p_value"]]
 
-        interim_info <- simulate_early_stopping(histories[[i]], block_size)
+        interim_info <- simulate_early_stopping(histories[[i]], stratum_size)
         summary[["interim_n_analyses"]] <- interim_info[["n_analyses"]]
         summary[["interim_n_patients"]] <- interim_info[["n_patients"]]
         summary[["interim_final_A0"]] <- interim_info[["final_A0"]]
@@ -204,7 +209,7 @@ to_matrices <- function(histories){
 #################################
 
 option_list <- list(
-                    make_option("--block_size", type="integer", default=-1),
+                    make_option("--stratum_frac", type="numeric", default=0.0)
                    )
 
 parser <- OptionParser(usage="analyze_histories.R HISTORIES_JSON OUTPUT_JSON", 
@@ -217,12 +222,17 @@ in_json <- pargs[1]
 out_json <- pargs[2]
 
 histories <- read_json(in_json)
+
 histories <- histories$histories
+
 histories <- to_matrices(histories)
+h1 <- histories[[1]]
+N_max <- sum(h1[[length(h1)]])
 
-block_size <- opts$block_size
+stratum_frac <- opts$stratum_frac
+stratum_size <- stratum_frac * N_max
 
-summaries <- analyze_histories(histories, block_size)
+summaries <- analyze_histories(histories, stratum_size)
 
 write_json(summaries, out_json, auto_unbox=TRUE)
 

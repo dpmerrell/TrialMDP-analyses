@@ -7,12 +7,6 @@ import script_util as su
 
 def compute_scores(summary_df, fc, bc):
 
-    # Reject the null for statistical tests
-    # (NOTE: in the future we will also permit 
-    #        interim analyses. This will require
-    #        access to the full history, and will
-    #        be located in the 
-    #        "summarize_histories.R" script.)
     alpha = 0.05
     summary_df["wald_reject"] = (summary_df["wald_p"].astype(float) < alpha).astype(int)
     summary_df["cmh_reject"] = (summary_df["cmh_p"].astype(float) < alpha).astype(int)
@@ -31,16 +25,23 @@ def compute_scores(summary_df, fc, bc):
     # Total number of patients
     summary_df["pat"] = N_A + N_B    
 
+    summary_df["nA-nB"] = N_A - N_B
+
     # Excess failures (recall: by construction, pA >= pB)
     summary_df["A_fraction"] = N_A / summary_df["pat"]
     summary_df["excess_failures"] = (summary_df["pA"] - summary_df["pB"])*N_B
+    summary_df["failures"] = summary_df["final_A0"] + summary_df["final_B0"]
+
+    # Interim analyses; early stopping
+    summary_df["obf_stopping_point"] = (summary_df["interim_n_patients"] / summary_df["pat"])
+    summary_df["obf_reject"] = (summary_df["interim_n_patients"] != summary_df["pat"] | summary_df["cmh_reject"])
 
     # Total utility
     summary_df["utility_wald"] = summary_df["wald_2s"] \
-                                 - summary_df["excess_failures"]*fc \
+                                 - summary_df["failures"]*fc \
                                  - summary_df["blocks"]*bc
     summary_df["utility_cmh"] = summary_df["cmh_2s"] \
-                                - summary_df["excess_failures"]*fc \
+                                - summary_df["failures"]*fc \
                                 - summary_df["blocks"]*bc
 
     return summary_df
@@ -48,8 +49,12 @@ def compute_scores(summary_df, fc, bc):
 
 
 def aggregate_quantities(summary_df, gp_columns):
-   
-    agg_df = summary_df.groupby(gp_columns).mean() 
+  
+    agg_gp = summary_df.groupby(gp_columns) 
+    agg_df = agg_gp.mean() 
+
+    agg_df["nA-nB_10"] = agg_gp["nA-nB"].quantile(0.1)
+    agg_df["nA-nB_90"] = agg_gp["nA-nB"].quantile(0.9)
 
     return agg_df
 

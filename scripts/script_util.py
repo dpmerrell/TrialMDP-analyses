@@ -73,6 +73,7 @@ NICE_NAMES = {"wald_reject": "Rejection Probability (Wald test)",
               "cmh": "CMH Test",
               "cmh_2s": "Two-sided CMH statistic",
               "first_blocksize": "Size of First Block",
-              "blocks": "Number of Blocks"
+              "blocks": "Number of Blocks",
+              "utility_cmh": "Utility"
              }
 
