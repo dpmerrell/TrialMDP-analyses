@@ -17,25 +17,37 @@ FIG_DIR = path.join(RESULT_DIR, "figures")
 
 SIM_PARAMS = config["simulation_params"]
 N_SAMPLES = SIM_PARAMS["n_samples"]
-TRUE_P_RANGE = SIM_PARAMS["true_p_range"]
-TRUE_P_PAIRS = ["pA={}_pB={}".format(pa, pb) for i, pa in enumerate(TRUE_P_RANGE) for pb in TRUE_P_RANGE[:(i+1)] ]
-
+#TRUE_P_RANGE = SIM_PARAMS["true_p_range"]
+#TRUE_P_PAIRS = ["pA={}_pB={}".format(pa, pb) for i, pa in enumerate(TRUE_P_RANGE) for pb in TRUE_P_RANGE[:(i+1)] ]
+TRUE_PA = SIM_PARAMS["true_pa"]
+TRUE_PB = SIM_PARAMS["true_pb"]
+NULL_HYP_N = SIM_PARAMS["null_hypothesis_n"]
+TRUE_P_PAIRS = ["pA={}_pB={}".format(pa, pb) for pa, pb in zip(TRUE_PA,TRUE_PB)]
+SIM_ALPHA = SIM_PARAMS["alpha"]
+SIM_BETA = SIM_PARAMS["beta"]
 
 ###############################
 # COMPUTE NUMBER OF PATIENTS
-def compute_n_patients(pA, pB, alpha=0.05, beta=0.2, delta=0.25):
+def compute_n_patients(pA, pB, alpha=SIM_ALPHA, beta=SIM_BETA):
     
-    # Some kluges for now
-    # variance of control:
+    if pA == pB:
+        # "Null" case
+	#delta = null_delta(pB)
+	#pA = pB + delta
+        return NULL_HYP_N
+
+    delta = abs(pA - pB)
+
     var_b = pB*(1.0-pB)
-    var_a = var_b
+    var_a = pA*(1.0-pA)
 
     k = (var_b / var_a)**0.5
 
     n_a = (norm.ppf(1.0-alpha) + norm.ppf(1.0-beta))**2.0 * (var_a + var_b/k) / (delta*delta)
     n_b = k * n_a
 
-    n = int(n_a + n_b)
+    # make it an even number
+    n = (int(n_a + n_b) // 2)*2
     print("pA: ", pA, "\tpB: ", pB, "\tN: ", n)
     return n
 
@@ -46,6 +58,7 @@ for pair in TRUE_P_PAIRS:
     pA = float(pApB[0])
     pB = float(pApB[1])
     N_PATIENTS_DICT["_".join(pApB)] = compute_n_patients(pA,pB)
+
 
 def get_n_patients(wc):
     return N_PATIENTS_DICT["{}_{}".format(wc["pA"], wc["pB"])]

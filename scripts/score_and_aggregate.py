@@ -36,12 +36,17 @@ def compute_scores(summary_df, fc, bc):
     summary_df["obf_stopping_point"] = (summary_df["interim_n_patients"] / summary_df["pat"])
     summary_df["obf_reject"] = (summary_df["interim_n_patients"] != summary_df["pat"] | summary_df["cmh_reject"])
 
+    #beta = 0.2
+    #chisq_beta = qchisq(1.0-beta)
+
     # Total utility
+    #summary_df["utility_wald"] = summary_df["wald"] \
     summary_df["utility_wald"] = summary_df["wald_2s"] \
-                                 - summary_df["failures"]*fc \
+                                 - summary_df["excess_failures"]*fc \
                                  - summary_df["blocks"]*bc
+    #summary_df["utility_cmh"] = summary_df["cmh"] \
     summary_df["utility_cmh"] = summary_df["cmh_2s"] \
-                                - summary_df["failures"]*fc \
+                                - summary_df["excess_failures"]*fc \
                                 - summary_df["blocks"]*bc
 
     return summary_df
