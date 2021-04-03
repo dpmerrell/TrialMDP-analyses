@@ -70,7 +70,6 @@ def get_n_patients(wc):
 BASELINES = config["baseline_designs"]
 
 BLOCKRAROPT_PARAMS = config["blockraropt_params"]
-BLOCK_INCR = BLOCKRAROPT_PARAMS["block_increment"]
 FAILURE_COST = BLOCKRAROPT_PARAMS["failure_cost"]
 ACT_N = BLOCKRAROPT_PARAMS["act_n"]
 BLOCK_COST = BLOCKRAROPT_PARAMS["block_cost"]
@@ -83,10 +82,9 @@ BLOCKRAR_N_BLOCKS = BLOCKRAR_PARAMS["n_blocks"]
 
 rule all:
     input:
-	    #        expand(path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_inc={inc}_pr={pr}_stat={stat}.tsv"),
+	    #        expand(path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
 	    #               fc=FAILURE_COST,
 	    #               bc=BLOCK_COST,
-	    #               inc=BLOCK_INCR,
 	    #               pr=PRIOR_STRENGTH,
 	    #               stat=OPT_STAT
 	    #               ),
@@ -101,33 +99,29 @@ rule all:
 	    #               fc=FAILURE_COST,
 	    #               bc=BLOCK_COST,
 	    #               ),
-        expand(path.join(FIG_DIR, "histories", "design=blockraropt", "{probs}_fc={fc}_bc={bc}_inc={inc}_pr={pr}_stat={stat}.png"),
+        expand(path.join(FIG_DIR, "histories", "design=blockraropt", "{probs}_fc={fc}_bc={bc}_pr={pr}_stat={stat}.png"),
                probs=TRUE_P_PAIRS,
                fc=FAILURE_COST,
                bc=BLOCK_COST,
-               inc=BLOCK_INCR,
                pr=PRIOR_STRENGTH,
                stat=OPT_STAT),
         expand(path.join(FIG_DIR, "histories", "design=rar", "{probs}.png"),
                probs=TRUE_P_PAIRS),
         expand(path.join(FIG_DIR, "histories", "design=blockrar", "{probs}.png"),
                probs=TRUE_P_PAIRS),
-        expand(path.join(COMPARISON_DIR, "fc={fc}_bc={bc}_inc={inc}_pr={pr}_stat={stat}.xlsx"),
+        expand(path.join(COMPARISON_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.xlsx"),
                fc=FAILURE_COST,
                bc=BLOCK_COST,
-               inc=BLOCK_INCR,
                pr=PRIOR_STRENGTH,
                stat=OPT_STAT),
-	#        expand(path.join(FIG_DIR, "fc_bc", "design=blockraropt", "score={score}_{probs}_inc={inc}_pr={pr}_stat={stat}.png"),
+	#        expand(path.join(FIG_DIR, "fc_bc", "design=blockraropt", "score={score}_{probs}_pr={pr}_stat={stat}.png"),
 	#               score=["excess_failures", "blocks", "cmh_2s", "utility_cmh"],
 	#               probs=TRUE_P_PAIRS,
-	#               inc=BLOCK_INCR,
 	#               pr=PRIOR_STRENGTH,
 	#               stat=OPT_STAT),
 	#        expand(path.join(FIG_DIR, "fc_bc", "design=traditional", "score={score}_{probs}_.png"),
 	#               score=["excess_failures", "utility_cmh"],
 	#               probs=TRUE_P_PAIRS,
-	#               inc=BLOCK_INCR,
 	#               pr=PRIOR_STRENGTH,
 	#               stat=OPT_STAT)
 
@@ -173,10 +167,10 @@ rule plot_histories:
 rule score_and_aggregate_blockraropt:
     input:
         src=path.join(SCRIPT_DIR, "score_and_aggregate.py"),
-        summ=expand(path.join(SUMMARY_DIR, "design=blockraropt", "{probs}_fc={{fc}}_bc={{bc}}_inc={{inc}}_stat={{stat}}.json"), 
+        summ=expand(path.join(SUMMARY_DIR, "design=blockraropt", "{probs}_fc={{fc}}_bc={{bc}}_stat={{stat}}.json"), 
                     probs=TRUE_P_PAIRS)
     output:
-        path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_inc={inc}_stat={stat}.tsv")
+        path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_stat={stat}.tsv")
     shell:
         "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
 
@@ -281,18 +275,24 @@ rule simulate_blockraropt_design:
         "Rscript {input.rscript} {params.n_pat} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design blockraropt --blockraropt_db {input.db}"
 
 
-#def compute_block_incr(wc):
-#    return max(int(float(wc["inc"])*int(wc["pat"])), 1)
+def compute_block_incr(wc):
+    pat = int(wc["pat"])
+    inc = 2
+    if pat > 100:
+        inc = 4
+    elif pat > 128:
+        inc = 8
+    return inc 
+
 
 rule precompute_blockraropt:
     input:
         path.join(SCRIPT_DIR, "blockraropt_wrapper.R")
     output:
-        path.join(POLICY_DB_DIR, "pat={pat}_fc={fc}_bc={bc}_inc={inc}_pr={pr}_stat={stat}.sqlite")
-    #params:
-    #    block_incr=compute_block_incr
+        path.join(POLICY_DB_DIR, "pat={pat}_fc={fc}_bc={bc}_pr={pr}_stat={stat}.sqlite")
+    params:
+        block_incr=compute_block_incr
     shell:
-        "Rscript {input} {wildcards.pat} {wildcards.inc} {wildcards.fc} {wildcards.bc} {output} --alpha_a {wildcards.pr} --beta_a {wildcards.pr} --alpha_b {wildcards.pr} --beta_b {wildcards.pr} --test_statistic {wildcards.stat} --act_n {ACT_N}"
-	#"Rscript {input} {wildcards.pat} {params.block_incr} {wildcards.fc} {wildcards.bc} {output} --alpha_a {wildcards.pr} --beta_a {wildcards.pr} --alpha_b {wildcards.pr} --beta_b {wildcards.pr} --test_statistic {wildcards.stat}"
+        "Rscript {input} {wildcards.pat} {params.block_incr} {wildcards.fc} {wildcards.bc} {output} --alpha_a {wildcards.pr} --beta_a {wildcards.pr} --alpha_b {wildcards.pr} --beta_b {wildcards.pr} --test_statistic {wildcards.stat} --act_n {ACT_N}"
 
 
