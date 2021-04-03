@@ -13,12 +13,11 @@ HISTORY_DIR = path.join(RESULT_DIR, "histories")
 SUMMARY_DIR = path.join(RESULT_DIR, "summaries") 
 SCORE_DIR = path.join(RESULT_DIR, "scores")
 COMPARISON_DIR = path.join(RESULT_DIR, "comparisons")
+BLOCKRAROPT_COMPARISON_DIR = path.join(RESULT_DIR, "blockraropt_comparisons")
 FIG_DIR = path.join(RESULT_DIR, "figures")
 
 SIM_PARAMS = config["simulation_params"]
 N_SAMPLES = SIM_PARAMS["n_samples"]
-#TRUE_P_RANGE = SIM_PARAMS["true_p_range"]
-#TRUE_P_PAIRS = ["pA={}_pB={}".format(pa, pb) for i, pa in enumerate(TRUE_P_RANGE) for pb in TRUE_P_RANGE[:(i+1)] ]
 TRUE_PA = SIM_PARAMS["true_pa"]
 TRUE_PB = SIM_PARAMS["true_pb"]
 NULL_HYP_N = SIM_PARAMS["null_hypothesis_n"]
@@ -124,6 +123,7 @@ rule all:
 	#               probs=TRUE_P_PAIRS,
 	#               pr=PRIOR_STRENGTH,
 	#               stat=OPT_STAT)
+        path.join(BLOCKRAROPT_COMPARISON_DIR, "comparisons.xlsx")
 
 
 rule compare_designs:
@@ -136,6 +136,18 @@ rule compare_designs:
         path.join(COMPARISON_DIR, "fc={fc,[.0-9]+}_bc={bc,[.0-9]+}_{bro_params}.xlsx")
     shell:
         "python {input.src} --score_tsvs {input.other_tsvs} {input.blockraropt_tsv} --identifiers {BASELINES} blockraropt --output_tsv {output}" 
+
+
+rule compare_blockraropt:
+    input:
+        src=path.join(SCRIPT_DIR, "compare_blockraropt.py"),
+        tsvs=expand(path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
+			      fc=FAILURE_COST, bc=BLOCK_COST,
+			      pr=PRIOR_STRENGTH, stat=OPT_STAT)
+    output:
+        path.join(BLOCKRAROPT_COMPARISON_DIR, "comparisons.xlsx")
+    shell:
+        "python {input.src} --score_tsvs {input.tsvs} --output_tsv {output}" 
 
 
 def get_kv_pairs(wc):
