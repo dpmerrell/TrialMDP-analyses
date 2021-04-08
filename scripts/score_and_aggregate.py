@@ -34,6 +34,7 @@ def compute_scores(summary_df, fc, bc):
 
     # Interim analyses; early stopping
     summary_df["obf_stopping_point"] = (summary_df["interim_n_patients"] / summary_df["pat"])
+    summary_df["obf_stopped_early"] = (summary_df["interim_n_patients"] < summary_df["pat"]).astype(float)
     summary_df["obf_reject"] = (summary_df["interim_n_patients"] != summary_df["pat"] | summary_df["cmh_reject"])
 
     #beta = 0.2

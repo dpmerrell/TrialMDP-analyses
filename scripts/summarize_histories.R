@@ -40,9 +40,6 @@ compute_wald_p_value <- function(history){
 }
 
 
-# TODO: use stratum_size to correctly compute CMH.
-#       stratum_size = -1 for blocked RAR and blockRARopt designs,
-#       and some positive integer for RAR designs.
 compute_cmh_p_value <- function(history, stratum_size){
 
     # compute Cochran-Mantel-Haenszel test statistic
@@ -79,6 +76,7 @@ compute_cmh_p_value <- function(history, stratum_size){
 
     return(list("cmh" = cmh, "p_value" = p_value))
 }
+
 
 interim_analysis <- function(blocks, cur_idx, stratum_size, alpha=0.05){
     

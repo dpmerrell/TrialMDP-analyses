@@ -37,7 +37,7 @@ if __name__=="__main__":
     parser.add_argument("--identifiers", help="string identifiers of trial designs", nargs="+")
     parser.add_argument("--output_tsv", type=str, help="output TSV file")
     #parser.add_argument("--score_cols", type=str, nargs="+", default=["pat","wald_reject","cmh_reject","wald_2s", "cmh_2s", "pA_mle_bias", "pB_mle_bias", "nA-nB", "nA-nB_10", "nA-nB_90", "A_fraction", "excess_failures", "blocks", "first_blocksize", "utility_wald","utility_cmh" ])
-    parser.add_argument("--score_cols", type=str, nargs="+", default=["pat", "cmh_reject", "obf_reject", "obf_stopping_point", "cmh_2s", "nA-nB", "nA-nB_10", "nA-nB_90", "A_fraction", "failures", "excess_failures", "blocks", "first_blocksize", "utility_cmh" ])
+    parser.add_argument("--score_cols", type=str, nargs="+", default=["pat", "cmh_reject", "obf_reject", "obf_stopped_early", "cmh_2s", "nA-nB", "nA-nB_10", "nA-nB_90", "A_fraction", "failures", "excess_failures", "blocks", "first_blocksize", "utility_cmh" ])
 
     args = parser.parse_args()
 
