@@ -15,6 +15,8 @@ SCORE_DIR = path.join(RESULT_DIR, "scores")
 COMPARISON_DIR = path.join(RESULT_DIR, "comparisons")
 BLOCKRAROPT_COMPARISON_DIR = path.join(RESULT_DIR, "blockraropt_comparisons")
 FIG_DIR = path.join(RESULT_DIR, "figures")
+AGG_DIR = path.join(RESULT_DIR, "aggregates")
+BRO_AGG_DIR = path.join(RESULT_DIR, "blockraropt_aggregates")
 
 SIM_PARAMS = config["simulation_params"]
 N_SAMPLES = SIM_PARAMS["n_samples"]
@@ -40,9 +42,12 @@ def compute_n_patients(pA, pB, alpha=SIM_ALPHA, beta=SIM_BETA):
     var_b = pB*(1.0-pB)
     var_a = pA*(1.0-pA)
 
-    k = (var_b / var_a)**0.5
+    k = 1.0 #(var_b / var_a)**0.5
 
+    # one-sided:
     n_a = (norm.ppf(1.0-alpha) + norm.ppf(1.0-beta))**2.0 * (var_a + var_b/k) / (delta*delta)
+    # two-sided:
+    #n_a = (norm.ppf(1.0 - 0.5*alpha) + norm.ppf(1.0-beta))**2.0 * (var_a + var_b/k) / (delta*delta)
     n_b = k * n_a
 
     # make it an even number
@@ -81,23 +86,6 @@ BLOCKRAR_N_BLOCKS = BLOCKRAR_PARAMS["n_blocks"]
 
 rule all:
     input:
-	    #        expand(path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
-	    #               fc=FAILURE_COST,
-	    #               bc=BLOCK_COST,
-	    #               pr=PRIOR_STRENGTH,
-	    #               stat=OPT_STAT
-	    #               ),
-	    #        expand(path.join(SCORE_DIR, "design=blockrar", "fc={fc}_bc={bc}_.tsv"),
-	    #               fc=FAILURE_COST,
-	    #               bc=BLOCK_COST),
-	    #        expand(path.join(SCORE_DIR, "design=rar", "fc={fc}_bc={bc}_.tsv"),
-	    #               fc=FAILURE_COST,
-	    #               bc=BLOCK_COST,
-	    #               ),
-	    #        expand(path.join(SCORE_DIR, "design=traditional", "fc={fc}_bc={bc}_.tsv"),
-	    #               fc=FAILURE_COST,
-	    #               bc=BLOCK_COST,
-	    #               ),
         expand(path.join(FIG_DIR, "histories", "design=blockraropt", "{probs}_fc={fc}_bc={bc}_pr={pr}_stat={stat}.png"),
                probs=TRUE_P_PAIRS,
                fc=FAILURE_COST,
@@ -108,46 +96,81 @@ rule all:
                probs=TRUE_P_PAIRS),
         expand(path.join(FIG_DIR, "histories", "design=blockrar", "{probs}.png"),
                probs=TRUE_P_PAIRS),
-        expand(path.join(COMPARISON_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.xlsx"),
-               fc=FAILURE_COST,
-               bc=BLOCK_COST,
-               pr=PRIOR_STRENGTH,
-               stat=OPT_STAT),
-	#        expand(path.join(FIG_DIR, "fc_bc", "design=blockraropt", "score={score}_{probs}_pr={pr}_stat={stat}.png"),
-	#               score=["excess_failures", "blocks", "cmh_2s", "utility_cmh"],
-	#               probs=TRUE_P_PAIRS,
-	#               pr=PRIOR_STRENGTH,
-	#               stat=OPT_STAT),
-	#        expand(path.join(FIG_DIR, "fc_bc", "design=traditional", "score={score}_{probs}_.png"),
-	#               score=["excess_failures", "utility_cmh"],
-	#               probs=TRUE_P_PAIRS,
-	#               pr=PRIOR_STRENGTH,
-	#               stat=OPT_STAT)
-        path.join(BLOCKRAROPT_COMPARISON_DIR, "comparisons.xlsx")
+        #expand(path.join(COMPARISON_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.xlsx"),
+        #       fc=FAILURE_COST,
+        #       bc=BLOCK_COST,
+        #       pr=PRIOR_STRENGTH,
+        #       stat=OPT_STAT),
+        path.join(COMPARISON_DIR, "master.xlsx")
 
 
-rule compare_designs:
+rule master_comparison:
     input:
-        src=path.join(SCRIPT_DIR, "tabulate_comparisons.py"),
-        blockraropt_tsv=path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_{bro_params}.tsv"),
-        other_tsvs=expand(path.join(SCORE_DIR, "design={des}", "fc={{fc}}_bc={{bc}}_.tsv"),
-                          des=BASELINES)
+        src=path.join(SCRIPT_DIR, "compare.py"),
+        bro_agg=path.join(AGG_DIR, "design=blockraropt.tsv"),
+        other_aggs=expand(path.join(AGG_DIR, "design={design}.tsv"), design=BASELINES)
     output:
-        path.join(COMPARISON_DIR, "fc={fc,[.0-9]+}_bc={bc,[.0-9]+}_{bro_params}.xlsx")
+        comp=path.join(COMPARISON_DIR, "master.xlsx")
     shell:
-        "python {input.src} --score_tsvs {input.other_tsvs} {input.blockraropt_tsv} --identifiers {BASELINES} blockraropt --output_tsv {output}" 
+        "python {input.src} --agg_tsvs {input.bro_agg} {input.other_aggs} --identifiers blockraropt {BASELINES} --output_xlsx {output.comp}"
 
 
-rule compare_blockraropt:
+rule merge_blockraropt_aggregates:
     input:
-        src=path.join(SCRIPT_DIR, "compare_blockraropt.py"),
-        tsvs=expand(path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
-			      fc=FAILURE_COST, bc=BLOCK_COST,
-			      pr=PRIOR_STRENGTH, stat=OPT_STAT)
+        src=path.join(SCRIPT_DIR, "merge_blockraropt_aggregates.py"),
+        aggs=expand(path.join(BRO_AGG_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
+                                            fc=FAILURE_COST, bc=BLOCK_COST,
+                                            pr=PRIOR_STRENGTH, stat=OPT_STAT)
     output:
-        path.join(BLOCKRAROPT_COMPARISON_DIR, "comparisons.xlsx")
+        merged=path.join(AGG_DIR, "design=blockraropt.tsv")
     shell:
-        "python {input.src} --score_tsvs {input.tsvs} --output_tsv {output}" 
+        "python {input.src} --agg_tsvs {input.aggs} --output_tsv {output.merged}"
+
+
+rule aggregate_blockraropt:
+    input:
+        src=path.join(SCRIPT_DIR, "aggregate.py"),
+        summaries=expand(path.join(SUMMARY_DIR, "design=blockraropt", "{probs}_{{bro_params}}.json"), 
+                         probs=TRUE_P_PAIRS)
+    output:
+        agg=path.join(BRO_AGG_DIR, "{bro_params}.tsv")
+    shell:
+        "python {input.src} --summaries {input.summaries} --output_tsv {output.agg}"
+
+
+rule aggregate_results:
+    input:
+        src=path.join(SCRIPT_DIR, "aggregate.py"),
+        summaries=expand(path.join(SUMMARY_DIR, "design={{des}}", "{probs}.json"), 
+                         probs=TRUE_P_PAIRS)
+    output:
+        agg=path.join(AGG_DIR, "design={des}.tsv")
+    shell:
+        "python {input.src} --summaries {input.summaries} --output_tsv {output.agg}"
+
+
+#rule compare_designs:
+#    input:
+#        src=path.join(SCRIPT_DIR, "tabulate_comparisons.py"),
+#        blockraropt_tsv=path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_{bro_params}.tsv"),
+#        other_tsvs=expand(path.join(SCORE_DIR, "design={des}", "fc={{fc}}_bc={{bc}}_.tsv"),
+#                          des=BASELINES)
+#    output:
+#        path.join(COMPARISON_DIR, "fc={fc,[.0-9]+}_bc={bc,[.0-9]+}_{bro_params}.xlsx")
+#    shell:
+#        "python {input.src} --score_tsvs {input.other_tsvs} {input.blockraropt_tsv} --identifiers {BASELINES} blockraropt --output_tsv {output}" 
+#
+#
+#rule compare_blockraropt:
+#    input:
+#        src=path.join(SCRIPT_DIR, "compare_blockraropt.py"),
+#        tsvs=expand(path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
+#			      fc=FAILURE_COST, bc=BLOCK_COST,
+#			      pr=PRIOR_STRENGTH, stat=OPT_STAT)
+#    output:
+#        path.join(BLOCKRAROPT_COMPARISON_DIR, "best_params.json")
+#    shell:
+#        "python {input.src} --score_tsvs {input.tsvs} --output_json {output}" 
 
 
 def get_kv_pairs(wc):
@@ -179,23 +202,12 @@ rule plot_histories:
 rule score_and_aggregate_blockraropt:
     input:
         src=path.join(SCRIPT_DIR, "score_and_aggregate.py"),
-        summ=expand(path.join(SUMMARY_DIR, "design=blockraropt", "{probs}_fc={{fc}}_bc={{bc}}_stat={{stat}}.json"), 
+        summ=expand(path.join(SUMMARY_DIR, "design=blockraropt", "{probs}_fc={{fc}}_bc={{bc}}_pr={{pr}}_stat={{stat}}.json"), 
                     probs=TRUE_P_PAIRS)
     output:
-        path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_stat={stat}.tsv")
+        path.join(SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv")
     shell:
         "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
-
-
-#rule score_and_aggregate_blockrar:
-#    input:
-#        src=path.join(SCRIPT_DIR, "score_and_aggregate.py"),
-#        summ=expand(path.join(SUMMARY_DIR, "design=blockrar", "{probs}_nblocks={{nblocks}}.json"), 
-#                    probs=TRUE_P_PAIRS)
-#    output:
-#        path.join(SCORE_DIR, "design=blockrar", "fc={fc}_bc={bc}_nblocks={nblocks}.tsv")
-#    shell:
-#        "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
 
 
 rule score_and_aggregate_default:
