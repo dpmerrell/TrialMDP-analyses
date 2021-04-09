@@ -16,7 +16,8 @@ def load_dfs(tsv_paths):
 
 def combine_dfs(df_ls, identifiers):
 
-    multicolumns = [(col, ident) for (df, ident) in zip(df_ls, identifiers) for col in df.columns]
+    multicolumns = [(col,ident) for (df, ident) in zip(df_ls, identifiers) for col in df.columns]
+    multicolumns = sorted(multicolumns)
 
     combined = pd.DataFrame(index=df_ls[0].index,
                             columns=pd.MultiIndex.from_tuples(multicolumns))
@@ -48,11 +49,13 @@ if __name__=="__main__":
 
     args = parser.parse_args()
 
-    dfs = load_dfs(args.score_tsvs)
+    dfs = load_dfs(args.agg_tsvs)
 
     table = combine_dfs(dfs, args.identifiers)
 
+    table = compute_utility(table, args.identifiers)
+
     #table.to_csv(args.output_tsv, sep="\t", index=True)
-    table.to_excel(args.output_excel)
+    table.to_excel(args.output_xlsx)
 
 

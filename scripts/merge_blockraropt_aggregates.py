@@ -8,7 +8,7 @@ import json
 def load_dfs(tsv_paths, params_ls):
 
     result = [] 
-    for (tsv_p, params) in zip(tsv_paths, param_ls):
+    for (tsv_p, params) in zip(tsv_paths, params_ls):
         df = pd.read_csv(tsv_p, sep="\t")
         df.set_index(["pA","pB"], inplace=True)
         
@@ -27,7 +27,7 @@ def fnames_to_params(filenames):
 
 def get_null_df_idx(param_ls, null_fc=0.5, null_bc=0.0, null_pr=0.5):
     for i, p in enumerate(param_ls):
-        if p["fc"] == null_fc and p["bc"] == null_bc and p["pr"] = null_pr:
+        if p["fc"] == null_fc and p["bc"] == null_bc and p["pr"] == null_pr:
             return i
     raise ValueError
 
