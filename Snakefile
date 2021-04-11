@@ -302,7 +302,7 @@ rule simulate_blockraropt_design:
 def compute_block_incr(wc):
     pat = int(wc["pat"])
     inc = 2
-    if pat > 100:
+    if pat >= 92: # 100:
         inc = 4
     elif pat > 128:
         inc = 8
