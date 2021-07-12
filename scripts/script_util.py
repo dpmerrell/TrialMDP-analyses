@@ -51,29 +51,59 @@ def tabulate_jsons(json_files):
 
 
 NICE_NAMES = {"wald_reject": "Rejection Probability (Wald test)",
-              "cmh_reject": "Rejection Probability (CMH test)",
+              "cmh_reject": "Power/Size (CMH test)",
+              "cmh_reject_z": "Power/Size $Z$",
               "pat": "$N$",
               "pA": "$p_A$",
               "pB": "$p_B$",
               "N_A": "$N_A$",
               "N_B": "$N_B$",
+              "nA-nB_norm": "$(N_A-N_B)/N$",
+              "nA-nB_10": "(10\%)",
+              "nA-nB_90": "(90\%)",
               "inc": "$\kappa$",
               "fc": "$\lambda_F$",
-              "bc": "$\lambda_B$",
+              "bc": "$\lambda_K$",
               "pr": "v",
               "design": "Trial Design",
-              "blockraropt": "BlockRAROpt",
+              #"blockraropt": "BlockRAROpt",
+              "blockraropt": "TrialMDP",
               "traditional": "One-to-One",
               "rar": "RAR",
               "blockrar": "Blocked RAR",
+              "trialmdp": "TrialMDP",
               "excess_failure_frac": "Excess Failure Fraction",
               "excess_failures": "Excess Failures",
+              "excess_failures_z": "Excess Failures $Z$",
               "analysis": "Analysis",
               "wald": "Wald Test",
               "cmh": "CMH Test",
               "cmh_2s": "Two-sided CMH statistic",
               "first_blocksize": "Size of First Block",
               "blocks": "Number of Blocks",
-              "utility_cmh": "Utility"
+              "blocks_z": "Number of Blocks $Z$",
+              "utility_cmh": "Utility",
+              "utility_cmh_z": "Utility $Z$",
+              "A_fraction": "$N_A/N$"
              }
+
+SHORT_NAMES = {"rar": "RAR",
+               "blockrar": "BRAR",
+               "blockraropt": "MDP",
+               "traditional": "1:1",
+               "trialmdp": "TrialMDP"
+              }
+
+def to_nice(s):
+    try:
+        return NICE_NAMES[s]
+    except KeyError:
+        return s
+
+def to_short(s):
+    try:
+        return SHORT_NAMES[s]
+    except KeyError:
+        return to_nice(s)
+    
 

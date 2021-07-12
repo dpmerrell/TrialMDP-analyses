@@ -7,22 +7,46 @@ simulation_params:
     n_samples: 10000
     true_pa: [0.1, 0.3, 0.5, 0.7, 0.9, 0.3, 0.4, 0.4, 0.5, 0.6, 0.7, 0.7, 0.9, 0.9] 
     true_pb: [0.1, 0.3, 0.5, 0.7, 0.9, 0.1, 0.1, 0.2, 0.3, 0.6, 0.5, 0.4, 0.6, 0.7]
+    #true_pa: [0.3, 0.4, 0.4, 0.7, 0.9, 0.9] # no null, no large N 
+    #true_pb: [0.1, 0.1, 0.2, 0.4, 0.6, 0.7]
     null_hypothesis_n: 100
     alpha: 0.05
     beta: 0.2
 
-blockraropt_params:
-    #block_increment: [2]
-    prior_strength: [0.5] #, 1.0]
-    #failure_cost: [0.25, 0.5, 0.75] #, 1.0] #, 2.0]
-    failure_cost: [1.0, 32.0, 64.0] #, 1.0] #, 2.0]
-    block_cost: [0.0, 0.0625, 0.125] #, 0.25] #, 1.0] #, 2.0]
-    stat: ["cmh"]
-    act_n: [13]
+
+trialmdp_params:
+    prior_strength: [1.0]
+    failure_cost: [2.0, 3.0, 4.0, 5.0]
+    #failure_cost: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    #block_cost: [0.2, 0.3, 0.4, 0.5]
+    #block_cost: [0.4, 0.5]
+    block_cost: [0.01, 0.025, 0.05, 0.1] #, 0.1]
+    stat: ["scaled_cmh"]
+    act_n: [7]
+
 
 baseline_designs: ["traditional", "rar", "blockrar"]
+
 
 blockrar_params:
     n_blocks: 2
 
+
+trial_redesign_params:
+    n_simulations: 10000
+    true_pa: [0.4, 0.8]
+    true_pb: [0.4, 0.4]
+    n_patients: 20
+    alpha: 0.05
+    beta: 0.2
+    failure_cost: [2.0, 3.0, 4.0, 5.0]
+    #block_cost: [0.1, 0.15, 0.2, 0.25, 0.3]
+    block_cost: [0.01, 0.025, 0.05, 0.1] #, 0.1]
+    prior_strength: 1.0
+    stat: "scaled_cmh"
+    act_n: 7
+    min_blocksize: 4
+    block_incr: 2
+    chosen_fc: 3.0
+    chosen_bc: 0.05
 

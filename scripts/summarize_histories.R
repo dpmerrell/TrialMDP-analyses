@@ -77,6 +77,42 @@ compute_cmh_p_value <- function(history, stratum_size){
     return(list("cmh" = cmh, "p_value" = p_value))
 }
 
+# Compute the "hm" score
+compute_hm_score <- function(history, pa, pb){
+
+    # compute Cochran-Mantel-Haenszel test statistic
+    numerator_sq <- 0.0
+    denom <- 0.0
+
+    final_ct <- history[[length(history)]]
+    qa = 1.0 - pa
+    qb = 1.0 - pb
+    pq_hat = 0.25*(pa + pb)*(qa + qb)
+    #pa_hat <- (final_ct[1,1]+1.0) / (final_ct[1,1] + final_ct[1,2] + 2.0)
+    #qa_hat <- 1.0 - pa_hat
+    #pb_hat <- (final_ct[2,1]+1.0) / (final_ct[2,1] + final_ct[2,2] + 2.0)
+    #qb_hat <- 1.0 - pb_hat
+
+    for(i in 2:length(history)){
+        ct <- history[[i]] - history[[i-1]]
+        rowsum_1 <- ct[1,1] + ct[1,2]
+        rowsum_2 <- ct[2,1] + ct[2,2] 
+
+        w <- rowsum_1*rowsum_2/(rowsum_1 + rowsum_2) 
+
+        numerator_sq <- numerator_sq + w             
+        denom <- denom + w*pq_hat
+    }
+ 
+    if(!(is.na(denom)) & denom != 0.0){
+        hm <- numerator_sq*numerator_sq / denom
+        #hm <- numerator_sq / pq_hat
+    }else{
+        hm <- 0.0 
+    }
+
+    return(hm)
+}
 
 interim_analysis <- function(blocks, cur_idx, stratum_size, alpha=0.05){
     
@@ -130,7 +166,7 @@ simulate_early_stopping <- function(history, stratum_size){
 }
 
 
-analyze_histories <- function (histories, stratum_size){
+analyze_histories <- function (histories, stratum_size, pa, pb){
 
     summaries <- list()
 
@@ -158,6 +194,8 @@ analyze_histories <- function (histories, stratum_size){
         cmh <- compute_cmh_p_value(histories[[i]], stratum_size)
         summary[["cmh"]] <- cmh[["cmh"]]
         summary[["cmh_p"]] <- cmh[["p_value"]]
+
+        summary[["hm_score"]] <- compute_hm_score(histories[[i]], pa, pb)
 
         interim_info <- simulate_early_stopping(histories[[i]], stratum_size)
         summary[["interim_n_analyses"]] <- interim_info[["n_analyses"]]
@@ -207,7 +245,9 @@ to_matrices <- function(histories){
 #################################
 
 option_list <- list(
-                    make_option("--stratum_frac", type="numeric", default=0.0)
+                    make_option("--stratum_frac", type="numeric", default=0.0),
+                    make_option("--pa", type="numeric"),
+                    make_option("--pb", type="numeric")
                    )
 
 parser <- OptionParser(usage="analyze_histories.R HISTORIES_JSON OUTPUT_JSON", 
@@ -224,13 +264,16 @@ histories <- read_json(in_json)
 histories <- histories$histories
 
 histories <- to_matrices(histories)
+
+#print(histories[[1]])
+
 h1 <- histories[[1]]
 N_max <- sum(h1[[length(h1)]])
 
 stratum_frac <- opts$stratum_frac
 stratum_size <- stratum_frac * N_max
 
-summaries <- analyze_histories(histories, stratum_size)
+summaries <- analyze_histories(histories, stratum_size, opts$pa, opts$pb)
 
 write_json(summaries, out_json, auto_unbox=TRUE)
 

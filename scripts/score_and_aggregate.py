@@ -27,9 +27,11 @@ def compute_scores(summary_df, fc, bc):
 
     summary_df["nA-nB"] = N_A - N_B
 
+    summary_df["nA-nB_norm"] = summary_df["nA-nB"]/summary_df["pat"]
+
     # Excess failures (recall: by construction, pA >= pB)
     summary_df["A_fraction"] = N_A / summary_df["pat"]
-    summary_df["excess_failures"] = (summary_df["pA"] - summary_df["pB"])*N_B
+    summary_df["excess_failures"] = (summary_df["pA"] - summary_df["pB"])*(N_B-N_A)/summary_df["pat"]
     summary_df["failures"] = summary_df["final_A0"] + summary_df["final_B0"]
 
     # Interim analyses; early stopping
@@ -42,11 +44,16 @@ def compute_scores(summary_df, fc, bc):
 
     # Total utility
     #summary_df["utility_wald"] = summary_df["wald"] \
-    summary_df["utility_wald"] = summary_df["wald_2s"] \
+    summary_df["utility_wald"] = summary_df["wald_2s"]/summary_df["pat"]\
                                  - summary_df["excess_failures"]*fc \
                                  - summary_df["blocks"]*bc
     #summary_df["utility_cmh"] = summary_df["cmh"] \
-    summary_df["utility_cmh"] = summary_df["cmh_2s"] \
+    summary_df["utility_cmh"] = summary_df["cmh_2s"]/summary_df["pat"]\
+                                - summary_df["excess_failures"]*fc \
+                                - summary_df["blocks"]*bc
+
+    summary_df["hm_score"] = summary_df["hm_score"]/summary_df["pat"]
+    summary_df["utility_hm"] = summary_df["hm_score"]\
                                 - summary_df["excess_failures"]*fc \
                                 - summary_df["blocks"]*bc
 
@@ -56,11 +63,20 @@ def compute_scores(summary_df, fc, bc):
 
 def aggregate_quantities(summary_df, gp_columns):
   
+    var_cols = ["cmh_reject", "excess_failures", "utility_cmh", "utility_hm", "nA-nB_norm"]
+    q_cols = ["nA-nB"]
+
     agg_gp = summary_df.groupby(gp_columns) 
     agg_df = agg_gp.mean() 
 
-    agg_df["nA-nB_10"] = agg_gp["nA-nB"].quantile(0.1)
-    agg_df["nA-nB_90"] = agg_gp["nA-nB"].quantile(0.9)
+    for col in var_cols:
+        agg_df[col+"_var"] = agg_gp[col].var()
+
+    for col in q_cols:
+        agg_df[col+"_10"] = agg_gp[col].quantile(0.1)
+        agg_df[col+"_90"] = agg_gp[col].quantile(0.9)
+        agg_df[col+"_05"] = agg_gp[col].quantile(0.05)
+        agg_df[col+"_95"] = agg_gp[col].quantile(0.95)
 
     return agg_df
 
