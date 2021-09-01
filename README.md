@@ -1,12 +1,12 @@
-# blockRARopt-analyses
-Analyses, experiments, and evaluations for the [blockRARopt method](https://github.com/dpmerrell/blockRARopt).
+# TrialMDP-analyses
+Analyses, experiments, and evaluations for the [TrialMDP method](https://github.com/dpmerrell/TrialMDP).
 
 See our manuscript at [MANUSCRIPT LINK]().
 
 ## Setup
 
 * Set up your R environment:
-    - Install the `blockRARopt` package
+    - Install the [`TrialMDP`](https://github.com/dpmerrell/TrialMDP) package
 
 * Set up your python 3.8 environment: 
     - run `pip install -r requirements.txt` to install the requisite python packages
@@ -14,8 +14,8 @@ See our manuscript at [MANUSCRIPT LINK]().
 ## Reproducing the analyses from our manuscript
 
 * Make sure you have sufficient compute resources.
-    - The analyses entail thousands of CPU-hours
-    - The analyses require several GB of memory and disk
+    - The analyses entail hundreds of CPU-hours (can be parallelized by `--cores` option, see below)
+    - The analyses require a few GB of memory and disk
 
 * Call [Snakemake](https://snakemake.readthedocs.io/en/v5.1.4/index.html). 
     - On a workstation, execute `snakemake --cores CORES` (where `CORES` is replaced by the number of cores you want to devote)
