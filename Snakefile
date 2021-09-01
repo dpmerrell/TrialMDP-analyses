@@ -142,7 +142,7 @@ rule all:
                pr=PRIOR_STRENGTH,
                stat=OPT_STAT,
                scen=["null","alternative"],
-               suff=["_z"]),
+               suff=["_z",""]),
         # Trial redesign results
         expand(path.join(RED_TEST_SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
 	       fc=[REDESIGN_CHOSEN_FC], bc=[REDESIGN_CHOSEN_BC], pr=[REDESIGN_PR], stat=[REDESIGN_STAT]),

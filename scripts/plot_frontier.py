@@ -47,7 +47,7 @@ def get_other_qty(score_dir, design_str, qty_str, pA, pB, bc="0.001"):
     return fc, qty
 
 
-def plot_frontier(xy_list, var_list, label_list, xlabel, ylabel, xl, xu):
+def plot_frontier(xy_list, h_list, label_list, xlabel, ylabel, xl, xu):
 
     #print("VAR LIST:")
     #print("\t",var_list)
@@ -74,8 +74,8 @@ def plot_frontier(xy_list, var_list, label_list, xlabel, ylabel, xl, xu):
     # plot the zero line (i.e., equal patient allocation)
     plt.plot([-100, 100],[0,0], color="silver", linestyle="--", linewidth=0.5)
 
-    for i, (xy, xyvar, label) in enumerate(zip(xy_list, var_list, label_list)):
-        plt.errorbar(xy[0], xy[1], xerr=np.sqrt(xyvar[0])/100.0, yerr=np.sqrt(xyvar[1])/100.0, fmt="none", ecolor=colors[i], elinewidth=0.1, capsize=1, capthick=0.1)
+    for i, (xy, xyh, label) in enumerate(zip(xy_list, h_list, label_list)):
+        plt.errorbar(xy[0], xy[1], xerr=xyh[0], yerr=xyh[1], fmt="none", ecolor=colors[i], elinewidth=0.1, capsize=1, capthick=0.1)
         plt.plot(xy[0], xy[1], color="black", linestyle="--")
         plt.scatter(xy[0], xy[1], color=colors[i], label=su.NICE_NAMES[label])
 
@@ -108,7 +108,7 @@ if __name__=="__main__":
 
 
     xy_ls = []
-    var_ls = []
+    h_ls = []
     label_ls = []
 
 
@@ -116,35 +116,35 @@ if __name__=="__main__":
         fc, power = get_blockraropt_qty(args.score_dir, args.power_str, pa, pb, bc=bc,
                                         pr=args.pr,
                                         stat=args.stat)
-        power_var_str = args.power_str + "_var"
-        _, power_var = get_blockraropt_qty(args.score_dir, power_var_str, pa, pb, bc=bc,
+        power_h_str = args.power_str + "_h"
+        _, power_h = get_blockraropt_qty(args.score_dir, power_h_str, pa, pb, bc=bc,
                                         pr=args.pr,
                                         stat=args.stat)
 
         _, outcomes = get_blockraropt_qty(args.score_dir, args.outcomes_str, pa, pb, bc=bc,
                                            pr=args.pr,
                                            stat=args.stat)
-        outcomes_var_str = args.outcomes_str + "_var"
-        _, outcomes_var = get_blockraropt_qty(args.score_dir, outcomes_var_str, pa, pb, bc=bc,
+        outcomes_h_str = args.outcomes_str + "_h"
+        _, outcomes_h = get_blockraropt_qty(args.score_dir, outcomes_h_str, pa, pb, bc=bc,
                                            pr=args.pr,
                                            stat=args.stat)
         xy_ls.append((power, outcomes))
-        var_ls.append((power_var, outcomes_var))
+        h_ls.append((power_h, outcomes_h))
         label_ls.append("blockraropt")
 
     bc = args.bc[0]
     for design in args.baselines:
         
         _, power = get_other_qty(args.score_dir, design, args.power_str, pa, pb, bc=bc)
-        _, power_var = get_other_qty(args.score_dir, design, power_var_str, pa, pb, bc=bc)
+        _, power_h = get_other_qty(args.score_dir, design, power_h_str, pa, pb, bc=bc)
         _, outcomes = get_other_qty(args.score_dir, design, args.outcomes_str, pa, pb, bc=bc)
-        _, outcomes_var = get_other_qty(args.score_dir, design, outcomes_var_str, pa, pb, bc=bc)
+        _, outcomes_h = get_other_qty(args.score_dir, design, outcomes_h_str, pa, pb, bc=bc)
         xy_ls.append((power, outcomes))
-        var_ls.append((power_var, outcomes_var))
+        h_ls.append((power_h, outcomes_h))
         label_ls.append(design)
 
 
-    plot_frontier(xy_ls, var_ls, label_ls, args.power_str, args.outcomes_str, args.xl, args.xu) 
+    plot_frontier(xy_ls, h_ls, label_ls, args.power_str, args.outcomes_str, args.xl, args.xu) 
 
     plt.savefig(args.output_png, dpi=200)
 

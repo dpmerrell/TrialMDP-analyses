@@ -47,17 +47,23 @@ if __name__=="__main__":
     parser.add_argument("input_xlsx")
     parser.add_argument("output_tex")
     parser.add_argument("--scenarios", default="null")
-    parser.add_argument("--columns", nargs="+", default=["cmh_reject", "excess_failures", "blocks", "utility_cmh"])
-    parser.add_argument("--suffix", default="")
+    parser.add_argument("--columns", nargs="+", default=["cmh_reject", "cmh_reject_h", "effect_bias", "nA-nB", "nA-nB_h", "blocks", "utility_cmh"])
+    parser.add_argument("--suffix", nargs="*", default=[""])
 
     args = parser.parse_args()
 
     df = pd.read_excel(args.input_xlsx, engine="openpyxl", header=[0,1], index_col=[0,1])
 
     df = select_rows(df, args.scenarios)
-    df = select_cols(df, args.columns, args.suffix)
+
+    if len(args.suffix) == 0:
+        suffix = ""
+    else:
+        suffix = args.suffix[0]
+
+    df = select_cols(df, args.columns, suffix)
     df = rename_cols(df)
 
-    df.to_latex(args.output_tex, float_format="%.2f", 
+    df.to_latex(args.output_tex, float_format="%.3f", 
                                  index=True, header=True, escape=False)
     

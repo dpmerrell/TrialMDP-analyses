@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import argparse
 import script_util as su
+import scipy.stats as st
 
 
 def compute_scores(summary_df, fc, bc):
@@ -21,6 +22,9 @@ def compute_scores(summary_df, fc, bc):
     summary_df["pB_mle"] = summary_df["final_B1"] / N_B 
     summary_df["pA_mle_bias"] = summary_df["pA_mle"] - summary_df["pA"]
     summary_df["pB_mle_bias"] = summary_df["pB_mle"] - summary_df["pB"]
+    summary_df["effect"] = summary_df["pA_mle"] - summary_df["pB_mle"]
+    summary_df["true_effect"] = summary_df["pA"] - summary_df["pB"]
+    summary_df["effect_bias"] = summary_df["effect"] - summary_df["true_effect"] 
 
     # Total number of patients
     summary_df["pat"] = N_A + N_B    
@@ -65,6 +69,8 @@ def aggregate_quantities(summary_df, gp_columns):
   
     var_cols = ["cmh_reject", "excess_failures", "utility_cmh", "utility_hm", "nA-nB_norm"]
     q_cols = ["nA-nB"]
+    ci_cols = ["nA-nB", "cmh_reject", "effect_bias", "nA-nB_norm"]
+    ci_conf = 0.90
 
     agg_gp = summary_df.groupby(gp_columns) 
     agg_df = agg_gp.mean() 
@@ -77,6 +83,11 @@ def aggregate_quantities(summary_df, gp_columns):
         agg_df[col+"_90"] = agg_gp[col].quantile(0.9)
         agg_df[col+"_05"] = agg_gp[col].quantile(0.05)
         agg_df[col+"_95"] = agg_gp[col].quantile(0.95)
+
+    for col in ci_cols:
+        agg_df[col+"_n"] = agg_gp[col].count()
+        agg_df[col+"_sem"] = agg_gp[col].sem()
+        agg_df[col+"_h"] = agg_df[col+"_sem"].values * st.t.ppf(0.5*(1.0 + ci_conf), agg_df[col+"_n"].values)
 
     return agg_df
 
