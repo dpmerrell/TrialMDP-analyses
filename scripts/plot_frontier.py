@@ -75,7 +75,7 @@ def plot_frontier(xy_list, h_list, label_list, xlabel, ylabel, xl, xu):
     plt.plot([-100, 100],[0,0], color="silver", linestyle="--", linewidth=0.5)
 
     for i, (xy, xyh, label) in enumerate(zip(xy_list, h_list, label_list)):
-        plt.errorbar(xy[0], xy[1], xerr=xyh[0], yerr=xyh[1], fmt="none", ecolor=colors[i], elinewidth=0.1, capsize=1, capthick=0.1)
+        plt.errorbar(xy[0], xy[1], xerr=xyh[0], yerr=xyh[1], fmt="none", ecolor=colors[i], elinewidth=1.0, capsize=2, capthick=1.0)
         plt.plot(xy[0], xy[1], color="black", linestyle="--")
         plt.scatter(xy[0], xy[1], color=colors[i], label=su.NICE_NAMES[label])
 
