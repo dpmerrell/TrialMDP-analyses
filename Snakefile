@@ -92,14 +92,15 @@ def compute_n_patients(pA, pB, alpha=SIM_ALPHA, beta=SIM_BETA):
 
     # one-sided:
     n_a = (norm.ppf(1.0-alpha) + norm.ppf(1.0-beta))**2.0 * (var_a + var_b/k) / (delta*delta)
-    # two-sided:
-    #n_a = (norm.ppf(1.0 - 0.5*alpha) + norm.ppf(1.0-beta))**2.0 * (var_a + var_b/k) / (delta*delta)
     n_b = k * n_a
-
-    # make it an even number
-    n = (int(n_a + n_b) // 2)*2
+    n = n_a + n_b
+    
+    # round *up* to an even number
+    n_up = int(n) + 1
+    if n_up % 2 == 1:
+        n_up += 1
     print("pA: ", pA, "\tpB: ", pB, "\tN: ", n)
-    return n
+    return n_up
 
 
 N_PATIENTS_DICT = {}
