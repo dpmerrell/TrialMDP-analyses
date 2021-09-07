@@ -6,7 +6,7 @@
 # JSON file.
 
 
-library("blockRARopt")
+library("TrialMDP")
 library("optparse")
 library("jsonlite")
 

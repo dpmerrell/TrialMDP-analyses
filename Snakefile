@@ -99,7 +99,7 @@ def compute_n_patients(pA, pB, alpha=SIM_ALPHA, beta=SIM_BETA):
     n_up = int(n) + 1
     if n_up % 2 == 1:
         n_up += 1
-    print("pA: ", pA, "\tpB: ", pB, "\tN: ", n)
+    print("pA: ", pA, "\tpB: ", pB, "\tN: ", n_up)
     return n_up
 
 
