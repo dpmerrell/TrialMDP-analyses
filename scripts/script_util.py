@@ -84,7 +84,9 @@ NICE_NAMES = {"wald_reject": "Rejection Probability (Wald test)",
               "blocks_z": "Number of Blocks $Z$",
               "utility_cmh": "Utility",
               "utility_cmh_z": "Utility $Z$",
-              "A_fraction": "$N_A/N$"
+              "A_fraction": "$N_A/N$",
+              "effect_estimate": "Effect size",
+              "effect_bias": "Effect bias"
              }
 
 SHORT_NAMES = {"rar": "RAR",

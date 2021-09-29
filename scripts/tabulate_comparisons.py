@@ -24,6 +24,7 @@ def combine_dfs(df_ls, identifiers, score_cols):
 
     for col in score_cols:
         for (ident, df) in zip(identifiers, df_ls):
+            print("\t", ident)
             combined[(col,ident)] = df[col] 
 
     return combined
@@ -46,8 +47,8 @@ if __name__=="__main__":
     parser.add_argument("--score_tsvs", help="TSV files containing scores", nargs="+")
     parser.add_argument("--identifiers", help="string identifiers of trial designs", nargs="+")
     parser.add_argument("--output_tsv", type=str, help="output TSV file")
-    parser.add_argument("--score_cols", type=str, nargs="+", default=["pat", "cmh_reject", "cmh_reject_h", "obf_reject", "obf_stopped_early", "cmh_2s", "hm_score", "nA-nB_norm", "nA-nB_norm_h", "nA-nB", "nA-nB_h", "nA-nB_10", "nA-nB_90", "effect_bias", "effect_bias_h", "A_fraction", "failures", "excess_failures", "blocks", "first_blocksize", "utility_cmh", "utility_hm"])
-    parser.add_argument("--z_cols", type=str, nargs="+", default=["cmh_reject", "excess_failures", "nA-nB_norm", "utility_cmh", "utility_hm"])
+    parser.add_argument("--score_cols", type=str, nargs="+", default=["pat", "cmh_reject", "cmh_reject_h", "obf_reject", "obf_stopped_early", "cmh_2s", "nA-nB_norm", "nA-nB_norm_h", "nA-nB", "nA-nB_h", "nA-nB_05", "nA-nB_95", "effect_estimate", "effect_bias", "effect_bias_h", "A_fraction", "failures", "excess_failures", "blocks", "first_blocksize", "utility_cmh"])
+    parser.add_argument("--z_cols", type=str, nargs="+", default=["cmh_reject", "excess_failures", "nA-nB_norm", "utility_cmh"])
     args = parser.parse_args()
 
     score_cols = args.score_cols + [col+"_var" for col in args.z_cols]

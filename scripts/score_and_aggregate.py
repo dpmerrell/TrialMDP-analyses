@@ -18,13 +18,15 @@ def compute_scores(summary_df, fc, bc):
     # MLE estimates
     N_A = summary_df["final_A0"] + summary_df["final_A1"]
     N_B = summary_df["final_B0"] + summary_df["final_B1"]
-    summary_df["pA_mle"] = summary_df["final_A1"] / N_A 
-    summary_df["pB_mle"] = summary_df["final_B1"] / N_B 
-    summary_df["pA_mle_bias"] = summary_df["pA_mle"] - summary_df["pA"]
-    summary_df["pB_mle_bias"] = summary_df["pB_mle"] - summary_df["pB"]
-    summary_df["effect"] = summary_df["pA_mle"] - summary_df["pB_mle"]
-    summary_df["true_effect"] = summary_df["pA"] - summary_df["pB"]
-    summary_df["effect_bias"] = summary_df["effect"] - summary_df["true_effect"] 
+    #summary_df["pA_mle"] = summary_df["final_A1"] / N_A 
+    #summary_df["pB_mle"] = summary_df["final_B1"] / N_B 
+    #summary_df["pA_mle_bias"] = summary_df["pA_mle"] - summary_df["pA"]
+    #summary_df["pB_mle_bias"] = summary_df["pB_mle"] - summary_df["pB"]
+    #summary_df["effect"] = summary_df["pA_mle"] - summary_df["pB_mle"]
+    #summary_df["true_effect"] = summary_df["pA"] - summary_df["pB"]
+    #summary_df["effect_bias"] = summary_df["effect"] - summary_df["true_effect"] 
+    summary_df["effect_estimate"] = summary_df["effect_estimate"].astype(float)
+    summary_df["effect_bias"] = summary_df["effect_estimate"].astype(float) - (summary_df["pA"] - summary_df["pB"])
 
     # Total number of patients
     summary_df["pat"] = N_A + N_B    
@@ -56,18 +58,13 @@ def compute_scores(summary_df, fc, bc):
                                 - summary_df["excess_failures"]*fc \
                                 - summary_df["blocks"]*bc
 
-    summary_df["hm_score"] = summary_df["hm_score"]/summary_df["pat"]
-    summary_df["utility_hm"] = summary_df["hm_score"]\
-                                - summary_df["excess_failures"]*fc \
-                                - summary_df["blocks"]*bc
-
     return summary_df
 
 
 
 def aggregate_quantities(summary_df, gp_columns):
   
-    var_cols = ["cmh_reject", "excess_failures", "utility_cmh", "utility_hm", "nA-nB_norm"]
+    var_cols = ["cmh_reject", "excess_failures", "utility_cmh", "nA-nB_norm"]
     q_cols = ["nA-nB"]
     ci_cols = ["nA-nB", "cmh_reject", "effect_bias", "nA-nB_norm"]
     ci_conf = 0.90

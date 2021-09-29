@@ -47,7 +47,7 @@ if __name__=="__main__":
     parser.add_argument("input_xlsx")
     parser.add_argument("output_tex")
     parser.add_argument("--scenarios", default="null")
-    parser.add_argument("--columns", nargs="+", default=["cmh_reject", "cmh_reject_h", "effect_bias", "nA-nB", "nA-nB_h", "blocks", "utility_cmh"])
+    parser.add_argument("--columns", nargs="+", default=["cmh_reject", "cmh_reject_h", "effect_bias", "effect_bias_h", "nA-nB", "nA-nB_05", "nA-nB_95", "blocks", "utility_cmh"])
     parser.add_argument("--suffix", nargs="*", default=[""])
 
     args = parser.parse_args()

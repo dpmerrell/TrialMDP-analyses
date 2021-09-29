@@ -145,7 +145,8 @@ rule all:
                scen=["null","alternative"],
                suff=["_z",""]),
         # Trial redesign results
-        expand(path.join(RED_TEST_SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
+        expand(path.join(RED_COMPARISON_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.xlsx"),
+	#expand(path.join(RED_TEST_SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
 	       fc=[REDESIGN_CHOSEN_FC], bc=[REDESIGN_CHOSEN_BC], pr=[REDESIGN_PR], stat=[REDESIGN_STAT]),
         expand(path.join(RED_FIG_DIR, "swept_frontiers", "{probs}_pr={pr}_stat={stat}.png"),
 	       probs=TRUE_P_PAIRS, pr=[REDESIGN_PR], stat=[REDESIGN_STAT]) 
@@ -246,7 +247,7 @@ rule summarize_rar_histories:
     output:
         path.join(SUMMARY_DIR, "design=rar", "pA={pA}_pB={pB,[.0-9]+}.json")
     shell:
-        "Rscript {input.src} {input.hist} {output} --stratum_frac 0.5 --pa {wildcards.pA} --pb {wildcards.pB}"
+        "Rscript {input.src} {input.hist} {output} --stratum_frac 1.0 --pa {wildcards.pA} --pb {wildcards.pB}"
 
 
 rule summarize_histories:
@@ -350,7 +351,20 @@ rule precompute_blockraropt:
 
 REDESIGN_BC_STR = " ".join("{}".format(bc) for bc in REDESIGN_BC)
 
-rule redesign_test_score_and_aggregate:
+
+rule redesign_compare_designs:
+    input:
+        src=path.join(SCRIPT_DIR, "tabulate_comparisons.py"),
+        blockraropt_tsv=path.join(RED_TEST_SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_{bro_params}.tsv"),
+        other_tsvs=expand(path.join(RED_TEST_SCORE_DIR, "design={des}", "fc={{fc}}_bc={{bc}}_.tsv"),
+                          des=BASELINES)
+    output:
+        path.join(RED_COMPARISON_DIR, "fc={fc,[.0-9]+}_bc={bc,[.0-9]+}_{bro_params}.xlsx")
+    shell:
+        "python {input.src} --score_tsvs {input.other_tsvs} {input.blockraropt_tsv} --identifiers {BASELINES} blockraropt --output_tsv {output}" 
+
+
+rule redesign_test_score_and_aggregate_blockraropt:
     input:
         src=path.join(SCRIPT_DIR, "score_and_aggregate.py"),
         summ=expand(path.join(RED_SUMMARY_DIR, "design=blockraropt", "{probs}_fc={{fc}}_bc={{bc}}_pr={{pr}}_stat={{stat}}.json"), 
@@ -360,14 +374,16 @@ rule redesign_test_score_and_aggregate:
     shell:
         "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
 
-#rule redesign_chosen_simulations:
-#    input:
-#        rscript=path.join(SCRIPT_DIR, "simulation_wrapper.R"),
-#        db=path.join(RED_POLICY_DB_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.sqlite")
-#    output:
-#        path.join(RED_HISTORY_DIR, "design=blockraropt", "pA={pA}_pB={pB,[.0-9]+}_fc={fc}_bc={bc}_pr={pr}_stat={stat}.json")
-#    shell:
-#        "Rscript {input.rscript} {REDESIGN_N} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design blockraropt --blockraropt_db {input.db}"
+
+rule redesign_test_score_and_aggregate_default:
+    input:
+        src=path.join(SCRIPT_DIR, "score_and_aggregate.py"),
+        summ=expand(path.join(RED_SUMMARY_DIR, "design={{des}}", "{probs}.json"), 
+                    probs=REDESIGN_P_PAIRS)
+    output:
+        path.join(RED_TEST_SCORE_DIR, "design={des}", "fc={fc}_bc={bc}_.tsv")
+    shell:
+        "python {input.src} --summaries {input.summ} --output_tsv {output} --fc {wildcards.fc} --bc {wildcards.bc}"
 
 
 rule redesign_sweep_plot_frontiers:
@@ -401,7 +417,27 @@ rule redesign_summarize_histories:
         "Rscript {input.src} {input.hist} {output} --pa {wildcards.pA} --pb {wildcards.pB}"
 
 
-rule redesign_sweep_simulation:
+rule redesign_summarize_rar_histories:
+    input:
+        src=path.join(SCRIPT_DIR, "summarize_histories.R"),
+        hist=path.join(RED_HISTORY_DIR, "design=rar", "pA={pA}_pB={pB}.json")
+    output:
+        path.join(RED_SUMMARY_DIR, "design=rar", "pA={pA}_pB={pB,[.0-9]+}.json")
+    shell:
+        "Rscript {input.src} {input.hist} {output} --stratum_frac 1.0 --pa {wildcards.pA} --pb {wildcards.pB}"
+
+
+rule redesign_summarize_histories_default:
+    input:
+        src=path.join(SCRIPT_DIR, "summarize_histories.R"),
+        hist=path.join(RED_HISTORY_DIR, "design={des}", "pA={pA}_pB={pB}.json")
+    output:
+        path.join(RED_SUMMARY_DIR, "design={des,(traditional|blockrar)}", "pA={pA}_pB={pB,[.0-9]+}.json")
+    shell:
+        "Rscript {input.src} {input.hist} {output} --pa {wildcards.pA} --pb {wildcards.pB}"
+
+
+rule redesign_simulate_blockraropt:
     input:
         rscript=path.join(SCRIPT_DIR, "simulation_wrapper.R"),
         db=path.join(RED_POLICY_DB_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.sqlite")
@@ -409,6 +445,34 @@ rule redesign_sweep_simulation:
         path.join(RED_HISTORY_DIR, "design=blockraropt", "pA={pA}_pB={pB,[.0-9]+}_fc={fc}_bc={bc}_pr={pr}_stat={stat}.json")
     shell:
         "Rscript {input.rscript} {REDESIGN_N} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design blockraropt --blockraropt_db {input.db}"
+
+
+rule redesign_simulate_traditional:
+    input:
+        rscript=path.join(SCRIPT_DIR, "simulation_wrapper.R"),
+    output:
+        path.join(RED_HISTORY_DIR, "design=traditional", "pA={pA}_pB={pB}.json")
+    shell:
+        "Rscript {input.rscript} {REDESIGN_N} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output}"
+
+
+rule redesign_simulate_rar:
+    input:
+        rscript=path.join(SCRIPT_DIR, "simulation_wrapper.R"),
+    output:
+        path.join(RED_HISTORY_DIR, "design=rar", "pA={pA}_pB={pB}.json")
+    shell:
+        "Rscript {input.rscript} {REDESIGN_N} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design rar"
+
+
+rule redesign_simulate_blockrar:
+    input:
+        rscript=path.join(SCRIPT_DIR, "simulation_wrapper.R"),
+    output:
+        path.join(RED_HISTORY_DIR, "design=blockrar", "pA={pA}_pB={pB}.json")
+    shell:
+        "Rscript {input.rscript} {REDESIGN_N} {N_SAMPLES} {wildcards.pA} {wildcards.pB} {output} --design blockrar --n_blocks {BLOCKRAR_N_BLOCKS}"
+
 
 
 rule redesign_precompute_blockraropt:

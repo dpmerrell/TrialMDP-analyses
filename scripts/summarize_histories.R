@@ -60,8 +60,6 @@ compute_cmh_p_value <- function(history, stratum_size){
     }
  
     if(!(is.na(denom)) & denom != 0.0){
-        # (two sided)
-        #cmh <- numerator_sq*numerator_sq / denom
         # (one sided)
         cmh <- numerator_sq / sqrt(denom)
     }else{
@@ -69,49 +67,38 @@ compute_cmh_p_value <- function(history, stratum_size){
     }
   
     # Compute p-value
-    # (two sided) 
-    #p_value <- pchisq(cmh, 1, lower.tail=FALSE)
-    # (one sided) 
     p_value <- pnorm(cmh, lower.tail=FALSE)
 
     return(list("cmh" = cmh, "p_value" = p_value))
 }
 
-# Compute the "hm" score
-compute_hm_score <- function(history, pa, pb){
+# Estimate effect size in a stratified fashion
+compute_stratified_effect <- function(history, stratum_size, pa, pb){
 
-    # compute Cochran-Mantel-Haenszel test statistic
-    numerator_sq <- 0.0
+    numerator <- 0.0
     denom <- 0.0
 
-    final_ct <- history[[length(history)]]
-    qa = 1.0 - pa
-    qb = 1.0 - pb
-    pq_hat = 0.25*(pa + pb)*(qa + qb)
-    #pa_hat <- (final_ct[1,1]+1.0) / (final_ct[1,1] + final_ct[1,2] + 2.0)
-    #qa_hat <- 1.0 - pa_hat
-    #pb_hat <- (final_ct[2,1]+1.0) / (final_ct[2,1] + final_ct[2,2] + 2.0)
-    #qb_hat <- 1.0 - pb_hat
-
+    stratum_start <- 1
     for(i in 2:length(history)){
-        ct <- history[[i]] - history[[i-1]]
-        rowsum_1 <- ct[1,1] + ct[1,2]
-        rowsum_2 <- ct[2,1] + ct[2,2] 
+        ct <- history[[i]] - history[[stratum_start]]
+        total <- sum(ct)
+        if((total >= stratum_size) | (i==length(history))){
+            rowsum_1 <- ct[1,1] + ct[1,2]
+            rowsum_2 <- ct[2,1] + ct[2,2] 
 
-        w <- rowsum_1*rowsum_2/(rowsum_1 + rowsum_2) 
+            delta <- (ct[1,1]/rowsum_1) - (ct[2,1]/rowsum_2)
+            w <- rowsum_1*rowsum_2/(rowsum_1 + rowsum_2) 
 
-        numerator_sq <- numerator_sq + w             
-        denom <- denom + w*pq_hat
+            numerator <- numerator + (w*delta)
+            denom <- denom + w
+
+            stratum_start <- i
+        }
     }
+
+    effect <- numerator / denom
  
-    if(!(is.na(denom)) & denom != 0.0){
-        hm <- numerator_sq*numerator_sq / denom
-        #hm <- numerator_sq / pq_hat
-    }else{
-        hm <- 0.0 
-    }
-
-    return(hm)
+    return(effect)
 }
 
 interim_analysis <- function(blocks, cur_idx, stratum_size, alpha=0.05){
@@ -195,7 +182,7 @@ analyze_histories <- function (histories, stratum_size, pa, pb){
         summary[["cmh"]] <- cmh[["cmh"]]
         summary[["cmh_p"]] <- cmh[["p_value"]]
 
-        summary[["hm_score"]] <- compute_hm_score(histories[[i]], pa, pb)
+        summary[["effect_estimate"]] <- compute_stratified_effect(histories[[i]], stratum_size, pa, pb)
 
         interim_info <- simulate_early_stopping(histories[[i]], stratum_size)
         summary[["interim_n_analyses"]] <- interim_info[["n_analyses"]]
@@ -265,8 +252,6 @@ histories <- histories$histories
 
 histories <- to_matrices(histories)
 
-#print(histories[[1]])
-
 h1 <- histories[[1]]
 N_max <- sum(h1[[length(h1)]])
 
@@ -275,6 +260,6 @@ stratum_size <- stratum_frac * N_max
 
 summaries <- analyze_histories(histories, stratum_size, opts$pa, opts$pb)
 
-write_json(summaries, out_json, auto_unbox=TRUE)
+write_json(summaries, out_json, auto_unbox=TRUE, digits=8)
 
 

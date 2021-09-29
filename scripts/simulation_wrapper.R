@@ -82,7 +82,7 @@ traditional_policy <- function(cur_state, N_patients){
 
 
 blockraropt_policy <- function(cur_state, conn){
-    res = blockRARopt::fetch_result(conn, cur_state[1,2], cur_state[1,1],
+    res = TrialMDP::fetch_result(conn, cur_state[1,2], cur_state[1,1],
                                           cur_state[2,2], cur_state[2,1])
     N <- res[["BlockSize"]]
     N_A <- res[["AAllocation"]]
@@ -194,7 +194,7 @@ if(opt$design == "traditional"){
     blocksize_map <- build_blocksize_map(N_patients, opt$n_blocks)
     policy <- function(ct){ return(blockrar_policy(ct, blocksize_map)) }
 } else if (opt$design == "blockraropt"){
-    conn <- blockRARopt::connect_to_results(opt$blockraropt_db)
+    conn <- TrialMDP::connect_to_results(opt$blockraropt_db)
     policy <- function(ct){ return(blockraropt_policy(ct, conn)) }
 } else{
     stop( c("design=", opt$design," is not a valid option.") )
