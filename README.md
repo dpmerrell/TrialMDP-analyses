@@ -1,7 +1,8 @@
 # TrialMDP-analyses
 Analyses, experiments, and evaluations for the [TrialMDP method](https://github.com/dpmerrell/TrialMDP).
 
-See the [TrialMDP manuscript on arXiv](https://arxiv.org/abs/2109.14642).
+See the [TrialMDP manuscript on arXiv](https://arxiv.org/abs/2109.14642). 
+The Snakemake workflow in this repository reproduces all of the results described in that paper.
 
 ## Setup
 
