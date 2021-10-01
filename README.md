@@ -1,7 +1,7 @@
 # TrialMDP-analyses
 Analyses, experiments, and evaluations for the [TrialMDP method](https://github.com/dpmerrell/TrialMDP).
 
-See our manuscript at [MANUSCRIPT LINK]().
+See the [TrialMDP manuscript on arXiv](https://arxiv.org/abs/2109.14642).
 
 ## Setup
 
