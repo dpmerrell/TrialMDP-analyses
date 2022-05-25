@@ -8,6 +8,7 @@ The Snakemake workflow in this repository reproduces all of the results describe
 
 * Set up your R environment:
     - Install the [`TrialMDP`](https://github.com/dpmerrell/TrialMDP) package
+    - Install the `optparse` package
 
 * Set up your python 3.8 environment: 
     - run `pip install -r requirements.txt` to install the requisite python packages
