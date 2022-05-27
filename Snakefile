@@ -135,6 +135,17 @@ rule all:
                probs=TRUE_P_PAIRS),
         expand(path.join(FIG_DIR, "histories", "design=blockrar", "{probs}.png"),
                probs=TRUE_P_PAIRS),
+        expand(path.join(FIG_DIR, "block_histories", "design=blockraropt", "{probs}_fc={fc}_bc={bc}_pr={pr}_stat={stat}.png"),
+               probs=TRUE_P_PAIRS,
+               fc=FAILURE_COST,
+               bc=BLOCK_COST,
+               pr=PRIOR_STRENGTH,
+               stat=OPT_STAT),
+        expand(path.join(FIG_DIR, "block_histories", "design=rar", "{probs}.png"),
+               probs=TRUE_P_PAIRS),
+        expand(path.join(FIG_DIR, "block_histories", "design=blockrar", "{probs}.png"),
+               probs=TRUE_P_PAIRS),
+        expand(path.join(FIG_DIR, "frontiers", "{probs}_bc={bc}_pr={pr}_stat={stat}.png"),
         expand(path.join(FIG_DIR, "frontiers", "{probs}_bc={bc}_pr={pr}_stat={stat}.png"),
                probs=TRUE_P_PAIRS, bc=BLOCK_COST, pr=PRIOR_STRENGTH, stat=OPT_STAT),
         expand(path.join(LATEX_COMPARISON_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}_scenario={scen}_suffix={suff}.tex"),
@@ -146,10 +157,9 @@ rule all:
                suff=["_z",""]),
         # Trial redesign results
         expand(path.join(RED_COMPARISON_DIR, "fc={fc}_bc={bc}_pr={pr}_stat={stat}.xlsx"),
-	#expand(path.join(RED_TEST_SCORE_DIR, "design=blockraropt", "fc={fc}_bc={bc}_pr={pr}_stat={stat}.tsv"),
-	       fc=[REDESIGN_CHOSEN_FC], bc=[REDESIGN_CHOSEN_BC], pr=[REDESIGN_PR], stat=[REDESIGN_STAT]),
+               fc=[REDESIGN_CHOSEN_FC], bc=[REDESIGN_CHOSEN_BC], pr=[REDESIGN_PR], stat=[REDESIGN_STAT]),
         expand(path.join(RED_FIG_DIR, "swept_frontiers", "{probs}_pr={pr}_stat={stat}.png"),
-	       probs=TRUE_P_PAIRS, pr=[REDESIGN_PR], stat=[REDESIGN_STAT]) 
+               probs=TRUE_P_PAIRS, pr=[REDESIGN_PR], stat=[REDESIGN_STAT]) 
 
 
 
@@ -188,8 +198,7 @@ rule plot_fc_bc:
     input:
         src=path.join(SCRIPT_DIR, "plot_fc_bc.py"),
         tsvs=expand(path.join(SCORE_DIR, "design={{design}}","fc={fc}_bc={bc}_{{other_params}}.tsv"),
-	            fc=FAILURE_COST,
-		    bc=BLOCK_COST)
+                    fc=FAILURE_COST, bc=BLOCK_COST)
     output:
         path.join(FIG_DIR, "fc_bc", "design={design}", "score={score}_pA={pA}_pB={pB,[.0-9]+}_{other_params,[_.=0-9a-z]*}.png")
     shell:
@@ -201,7 +210,7 @@ rule plot_frontiers:
     input:
         src=path.join(SCRIPT_DIR, "plot_frontier.py"),
         bl_scores=expand(path.join(SCORE_DIR,"design={design}","fc={fc}_bc={{bc}}_.tsv"), design=BASELINES, fc=FAILURE_COST),
-	bro_scores=expand(path.join(SCORE_DIR, "design=blockraropt","fc={fc}_bc={{bc}}_pr={{pr}}_stat={{stat}}.tsv"), fc=FAILURE_COST)
+        bro_scores=expand(path.join(SCORE_DIR, "design=blockraropt","fc={fc}_bc={{bc}}_pr={{pr}}_stat={{stat}}.tsv"), fc=FAILURE_COST)
     output:
         os.path.join(FIG_DIR, "frontiers", "pA={pA}_pB={pB}_bc={bc}_pr={pr}_stat={stat}.png")
     shell:
@@ -214,6 +223,15 @@ rule plot_histories:
         src=path.join(SCRIPT_DIR, "plot_histories.py")
     output:
         path.join(FIG_DIR, "histories", "design={design}", "{other_params}.png")
+    shell:
+        "python {input.src} {input.js} {wildcards.design} {output}"
+
+rule plot_block_histories:
+    input:
+        js=path.join(HISTORY_DIR, "design={design}", "{other_params}.json"),
+        src=path.join(SCRIPT_DIR, "plot_blocks.py")
+    output:
+        path.join(FIG_DIR, "block_histories", "design={design}", "{other_params}.png")
     shell:
         "python {input.src} {input.js} {wildcards.design} {output}"
 
@@ -389,7 +407,7 @@ rule redesign_test_score_and_aggregate_default:
 rule redesign_sweep_plot_frontiers:
     input:
         src=path.join(SCRIPT_DIR, "plot_frontier.py"),
-	bro_scores=expand(path.join(RED_SCORE_DIR, "design=blockraropt","fc={fc}_bc={bc}_pr={{pr}}_stat={{stat}}.tsv"), fc=REDESIGN_FC, bc=REDESIGN_BC)
+        bro_scores=expand(path.join(RED_SCORE_DIR, "design=blockraropt","fc={fc}_bc={bc}_pr={{pr}}_stat={{stat}}.tsv"), fc=REDESIGN_FC, bc=REDESIGN_BC)
     output:
         os.path.join(RED_FIG_DIR, "swept_frontiers", "pA={pA}_pB={pB}_pr={pr}_stat={stat}.png")
     shell:

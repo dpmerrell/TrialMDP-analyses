@@ -103,5 +103,5 @@ if __name__=="__main__":
 
     plt.tight_layout()
 
-    plt.savefig(out_png, dpi=200)
+    plt.savefig(out_png, dpi=300)
         
